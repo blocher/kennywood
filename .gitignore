@@ -1,0 +1,4 @@
+node_modules/
+
+# Prototype deps
+prototype/waits-board/node_modules/
