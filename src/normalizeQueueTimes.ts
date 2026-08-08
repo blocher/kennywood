@@ -15,13 +15,17 @@ type QueueTimesRide = {
 };
 
 /** Flatten lands[].rides and top-level rides into a WaitFeed. */
-export function normalizeQueueTimes(payload: QueueTimesPayload, fetchedAt = new Date().toISOString()): WaitFeed {
-  const byId = new Map<number, WaitAttraction>();
+export function normalizeQueueTimes(
+  payload: QueueTimesPayload,
+  fetchedAt = new Date().toISOString(),
+): WaitFeed {
+  const byId = new Map<string, WaitAttraction>();
 
   const ingest = (rides: QueueTimesRide[] | undefined) => {
     for (const r of rides ?? []) {
-      byId.set(r.id, {
-        id: r.id,
+      const id = String(r.id);
+      byId.set(id, {
+        id,
         name: r.name,
         isOpen: Boolean(r.is_open),
         waitMinutes: Number(r.wait_time) || 0,
@@ -35,6 +39,7 @@ export function normalizeQueueTimes(payload: QueueTimesPayload, fetchedAt = new 
 
   return {
     fetchedAt,
+    source: "queue-times",
     attractions: [...byId.values()],
   };
 }

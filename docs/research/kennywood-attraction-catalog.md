@@ -93,8 +93,39 @@ Snapshot: **20** rides from `https://queue-times.com/parks/312/queue_times.json`
 3. **46″ companion phrasing conflict** — Ghostwood Estate and Turtle (and several non-board Attractions) disagree between Accessibility (“46″ and under”) and Attraction pages (“under 46″”) at exactly 46″.
 4. **No absolute min** — Ghostwood Estate, Noah’s Ark, Old Mill, Turtle: Height filter min remains **unknown** for numeric Eligibility until the park publishes a floor (infant exclusion is not a height).
 5. **Thunderbolt partner rule** — Height-only Eligibility will over-admit solo Riders relative to park policy.
-6. **Board coverage vs park inventory** — Queue-Times currently lists 20 Attractions; Accessibility documents many more (Merry-Go-Round, Wave Swinger, Children’s Rides, etc.). Those are intentionally omitted from the catalog until they appear in the QT feed.
+6. **Board coverage vs park inventory (updated 2026-08-08)** — Queue-Times still lists only **20** Attractions for park 312. First-party Kennywood Accessibility / Attractions pages list many more (Cosmic Chaos, Wave Swinger, Musik Express, Potato Smash, Auto Race, Merry-Go-Round, Whip, Pirate, Olde Kennywood Railroad, Paddle Boats, Kenny’s Cargo Drop, and Children’s / Kiddieland Attractions). **Cosmic Chaos** is a live Thrill Ride (Min 48″) on kennywood.com and Accessibility, but it has **no Queue-Times wait row** — that is why it was absent from the QT-only board. Product now catalogs those first-party Attractions with local ids (`900001+`) and lists them with Wait `—` / “no wait data” until QT adds them.
 7. **Height Requirements PDF** — A `KNW_2025_HeightRequirements.pdf` link appears in search indexes but returned 404 at research time; Accessibility + Attraction pages were used instead.
+
+## First-party Attractions without Queue-Times waits (final pass)
+
+Retrieved 2026-08-08 from Accessibility Individual Ride Information + Attraction pages. Live QT `queue_times.json` rechecked the same day — still no ids for these names.
+
+| Local id | Name | Ride type | Height envelope (in) | Sources |
+| --- | --- | --- | --- | --- |
+| 900002 | Cosmic Chaos | thrill ride | 48 – none | Attraction Thrill Ride; Accessibility ≥48″ |
+| 900004 | Musik Express | thrill ride | 50 – none | Attraction Thrill Ride; Accessibility ≥50″ |
+| 900008 | Pirate | thrill ride | 39 – none | Attraction Thrill Ride; Accessibility ≥39″ / companion 39–48″; Attractions index Temporarily Unavailable |
+| 900001 | Auto Race | family ride | unknown – none | Attraction Family Ride; Accessibility under 46″ companion |
+| 900003 | Merry-Go-Round | family ride | unknown – none | Attraction Family Ride; Accessibility under 46″ companion |
+| 900005 | Wave Swinger | family ride | 46 – none | Attraction Family Ride; Accessibility ≥46″ |
+| 900006 | Whip | family ride | unknown – none | Attraction Family Ride; Accessibility 46″ and under companion |
+| 900007 | Potato Smash | family ride | 42 – none | Attraction Family Ride; Accessibility ≥42″ / companion 42–48″ |
+| 900009 | Olde Kennywood Railroad | family ride | unknown – none | Attraction Family Ride; Accessibility 46″ and under companion |
+| 900010 | Paddle Boats | family ride | unknown – none | Attraction Family Ride; fee; under 46″ companion |
+| 900011 | Kenny's Cargo Drop | family ride | 42 – none | Attraction Family Ride; Accessibility ≥42″ (also under Children’s Rides) |
+| 900012 | Coal Haulin’ Convoy | family ride | unknown – none | Attraction Family Ride; under 36″ companion |
+| 900015 | Fire Bustin’ Brigade | family ride | unknown – none | Attraction Family Ride; under 36″ companion; Temporarily Unavailable |
+| 900018 | Parker's Cloud Cruisers | family ride | unknown – none | Attraction Family Ride; under 36″ companion |
+| 900017 | Lil’ Phantom | roller coaster | unknown – none | Attraction Roller Coaster (Kiddieland); under 36″ companion |
+| 900013 | Crazy Trolley | kiddie ride | unknown – none | Accessibility Children’s Rides; under 42″ companion |
+| 900014 | Dizzy Dynamo | kiddie ride | unknown – none | Accessibility Children’s Rides; under 36″ companion |
+| 900016 | Kenny's Karousel | kiddie ride | 36 – 52 | Accessibility Children’s Rides |
+| 900019 | Red Baron | kiddie ride | 36 – 56 | Accessibility Children’s Rides |
+| 900020 | Steel City Choppers | kiddie ride | 36 – 56 | Accessibility Children’s Rides |
+| 900021 | Turtle Chase | kiddie ride | unknown – none | Accessibility Children’s Rides; under 42″ companion |
+| 900022 | Wacky Wheel | kiddie ride | 36 – 52 | Accessibility Children’s Rides |
+| 900023 | Whippersnapper | kiddie ride | 36 – 52 | Accessibility Children’s Rides |
+| 900024 | Whirlwind | kiddie ride | 36 – 48 | Accessibility Children’s Rides |
 
 ## Recommendation for product language
 
@@ -102,6 +133,6 @@ Adopt the adapted Ride type set above (`family ride` + `water ride` instead of `
 
 ## Citations (per claim class)
 
-- Board membership / QT ids / names: Queue-Times `queue_times.json` for park 312 (retrieved 2026-08-08 UTC).
+- Board membership / QT ids / names: Queue-Times `queue_times.json` for park 312 (retrieved 2026-08-08 UTC; rechecked same day — Cosmic Chaos still absent).
 - Height wording: Kennywood Accessibility Individual Ride Information for each named ride (retrieved 2026-08-08 UTC).
-- Ride type labels and height cross-checks: Kennywood Attraction pages linked from https://www.kennywood.com/discover-the-park/attractions/ (retrieved 2026-08-08 UTC), including `/attractions/the-steel-curtain/` for Steel Curtain.
+- Ride type labels and height cross-checks: Kennywood Attraction pages linked from https://www.kennywood.com/discover-the-park/attractions/ (retrieved 2026-08-08 UTC), including `/attractions/the-steel-curtain/` for Steel Curtain and `/attractions/cosmic-chaos/` for Cosmic Chaos.

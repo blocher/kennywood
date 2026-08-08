@@ -9,19 +9,26 @@ import type { RideType } from "./catalog";
 import type { WaitFeed } from "./types";
 import { typesAfterTypeTap } from "./typeQuick";
 import { formatHeight } from "./heightFormat";
+import {
+  DEFAULT_WAIT_SOURCE,
+  parseWaitSource,
+  type WaitSource,
+} from "./sources";
 
 const POLL_MS = 60_000;
 const CHROME_KEY = "kennywood-waits:chrome";
 const FILTERS_KEY = "kennywood-waits:filters";
+const SOURCE_KEY = "kennywood-waits:source";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("#app missing");
 
-let lastGood: WaitFeed = MOCK_FEED;
+let lastGood: WaitFeed = { ...MOCK_FEED, source: DEFAULT_WAIT_SOURCE };
 let stale = false;
 let statusOverride: string | null = "Loading waits…";
 let chromeState: BoardChrome = loadChrome();
 let filters: FilterState = loadFilters();
+let waitSource: WaitSource = loadSource();
 let filtersOpen = false;
 let groupOpen = false;
 let riders: Rider[] = loadGroup();
@@ -37,6 +44,7 @@ function paint() {
     groupOpen,
     riders,
     selectedRiderIds,
+    source: waitSource,
   });
 }
 
@@ -52,6 +60,7 @@ function paintList() {
     groupOpen,
     riders,
     selectedRiderIds,
+    source: waitSource,
   });
   const newList = next.querySelector(".list");
   const curList = app!.querySelector(".list");
@@ -73,6 +82,10 @@ function persistFilters() {
       heightMax: filters.heightMax,
     }),
   );
+}
+
+function persistSource() {
+  localStorage.setItem(SOURCE_KEY, waitSource);
 }
 
 function loadChrome(): BoardChrome {
@@ -110,9 +123,17 @@ function loadFilters(): FilterState {
   }
 }
 
+function loadSource(): WaitSource {
+  try {
+    return parseWaitSource(localStorage.getItem(SOURCE_KEY));
+  } catch {
+    return DEFAULT_WAIT_SOURCE;
+  }
+}
+
 async function refresh() {
   if (document.visibilityState !== "visible") return;
-  const result = await fetchWaits();
+  const result = await fetchWaits(waitSource);
   if (result.ok) {
     lastGood = result.feed;
     stale = false;
@@ -226,6 +247,16 @@ document.addEventListener("change", (e) => {
     else next.add(id);
     selectedRiderIds = next;
     paint();
+  }
+  if (action === "set-source") {
+    const next = parseWaitSource(el.value);
+    if (next === waitSource) return;
+    waitSource = next;
+    persistSource();
+    statusOverride = "Loading waits…";
+    stale = false;
+    paint();
+    void refresh();
   }
 });
 

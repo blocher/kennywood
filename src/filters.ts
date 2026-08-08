@@ -46,10 +46,16 @@ export function heightRangeMatches(row: BoardRow, heightMin: number, heightMax: 
 }
 
 export function applyFilters(rows: BoardRow[], filters: FilterState): BoardRow[] {
+  const waitUnrestricted = filters.waitMin <= 0 && filters.waitMax >= 120;
   return rows.filter((row) => {
     if (!filters.types.has(row.rideType)) return false;
-    const wait = row.isOpen ? row.waitMinutes : 0;
-    if (wait < filters.waitMin || wait > filters.waitMax) return false;
+    if (row.waitUnknown) {
+      // No live Wait — only keep when the Wait range filter is at defaults.
+      if (!waitUnrestricted) return false;
+    } else {
+      const wait = row.isOpen ? row.waitMinutes : 0;
+      if (wait < filters.waitMin || wait > filters.waitMax) return false;
+    }
     if (!heightRangeMatches(row, filters.heightMin, filters.heightMax)) return false;
     return true;
   });

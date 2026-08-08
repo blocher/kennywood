@@ -9,20 +9,30 @@ function row(partial: Partial<BoardRow> & Pick<BoardRow, "id" | "name" | "isOpen
     envelopeMinIn: 48,
     envelopeMaxIn: null,
     heightUnknown: false,
+    waitUnknown: false,
     ...partial,
   };
 }
 
 describe("applyChrome", () => {
   const rows = [
-    row({ id: 1, name: "Zebra", isOpen: true, waitMinutes: 30 }),
-    row({ id: 2, name: "Alpha", isOpen: true, waitMinutes: 10 }),
-    row({ id: 3, name: "Closed Coaster", isOpen: false, waitMinutes: 0 }),
+    row({ id: "1", name: "Zebra", isOpen: true, waitMinutes: 30 }),
+    row({ id: "2", name: "Alpha", isOpen: true, waitMinutes: 10 }),
+    row({ id: "3", name: "Closed Coaster", isOpen: false, waitMinutes: 0 }),
   ];
 
   it("defaults to wait ascending with closed listed", () => {
     const out = applyChrome(rows, defaultChrome());
     expect(out.map((r) => r.name)).toEqual(["Alpha", "Zebra", "Closed Coaster"]);
+  });
+
+  it("sorts no-wait catalog rows after live waits and before closed", () => {
+    const withGap = [
+      ...rows,
+      row({ id: "4", name: "Cosmic Chaos", isOpen: true, waitMinutes: 0, waitUnknown: true }),
+    ];
+    const out = applyChrome(withGap, defaultChrome());
+    expect(out.map((r) => r.name)).toEqual(["Alpha", "Zebra", "Cosmic Chaos", "Closed Coaster"]);
   });
 
   it("sorts alphabetically", () => {

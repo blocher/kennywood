@@ -6,6 +6,12 @@ import { applyFilters, type FilterState } from "./filters";
 import { formatHeight } from "./heightFormat";
 import type { Rider } from "./group";
 import { renderTypeFilterChips, renderTypeQuick } from "./typeQuick";
+import {
+  WAIT_SOURCES,
+  attributionFor,
+  type WaitSource,
+  DEFAULT_WAIT_SOURCE,
+} from "./sources";
 
 export type BoardOptions = {
   stale?: boolean;
@@ -16,6 +22,7 @@ export type BoardOptions = {
   groupOpen?: boolean;
   riders?: Rider[];
   selectedRiderIds?: Set<string>;
+  source?: WaitSource;
 };
 
 function statusText(feed: WaitFeed, opts: BoardOptions): string {
@@ -61,7 +68,20 @@ function dualRange(opts: {
     </fieldset>`;
 }
 
-function filtersSheet(filters: FilterState): string {
+function filtersSheet(filters: FilterState, source: WaitSource): string {
+  const sourceOptions = WAIT_SOURCES.map(
+    (s) => `
+      <label class="source-option ${source === s.id ? "on" : ""}">
+        <input type="radio" name="wait-source" data-action="set-source" value="${s.id}" ${
+          source === s.id ? "checked" : ""
+        } />
+        <span class="source-copy">
+          <span class="source-label">${escapeHtml(s.label)}</span>
+          <span class="source-hint">${escapeHtml(s.hint)}</span>
+        </span>
+      </label>`,
+  ).join("");
+
   return `
     <div class="sheet-backdrop" data-action="close-filters"></div>
     <div class="sheet" role="dialog" aria-label="Filters">
@@ -70,6 +90,10 @@ function filtersSheet(filters: FilterState): string {
         <button type="button" data-action="close-filters">Close</button>
       </header>
       <div class="sheet-body">
+        <fieldset>
+          <legend>Data source</legend>
+          <div class="source-list" role="radiogroup" aria-label="Wait data source">${sourceOptions}</div>
+        </fieldset>
         ${dualRange({
           legend: "Wait (min)",
           min: 0,
@@ -156,8 +180,10 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
   const filters = opts.filters;
   const selected = opts.selectedRiderIds ?? new Set<string>();
   const riders = opts.riders ?? [];
+  const source = opts.source ?? feed.source ?? DEFAULT_WAIT_SOURCE;
+  const credit = attributionFor(source);
 
-  let joined = joinBoardRows(feed.attractions);
+  let joined = joinBoardRows(feed.attractions, source);
   if (filters) joined = applyFilters(joined, filters);
   // Eligibility: all selected riders must fit
   if (selected.size > 0) {
@@ -170,9 +196,10 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
   }
   const rows = applyChrome(joined, chrome).map((a) => {
     const label = waitLabel(a);
-    const closed = a.isOpen ? "" : " closed";
+    const closed = !a.isOpen && !a.waitUnknown ? " closed" : "";
+    const nowait = a.waitUnknown ? " nowait" : "";
     return `
-        <li class="row${closed}">
+        <li class="row${closed}${nowait}">
           <div class="main">
             <span class="name">${escapeHtml(a.name)}</span>
             <span class="meta">${escapeHtml(rowMeta(a))}</span>
@@ -208,9 +235,9 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
       <ul class="list">${empty}</ul>
       <p class="attribution">
         Powered by
-        <a href="https://queue-times.com/en-US" target="_blank" rel="noopener noreferrer">Queue-Times.com</a>
+        <a href="${escapeHtml(credit.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(credit.text)}</a>
       </p>
-      ${opts.filtersOpen && filters ? filtersSheet(filters) : ""}
+      ${opts.filtersOpen && filters ? filtersSheet(filters, source) : ""}
       ${opts.groupOpen ? groupSheet(riders, selected) : ""}
     </div>`;
 }

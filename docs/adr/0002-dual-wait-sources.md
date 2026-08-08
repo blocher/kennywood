@@ -1,0 +1,3 @@
+# Dual Wait sources (ThemeParks.wiki + Queue-Times)
+
+Kennywood Waits can load live Wait times from **ThemeParks.wiki** (default; fuller Attraction coverage including Cosmic Chaos) or **Queue-Times** park 312. Both go through the same-origin `/api/waits?source=` Pages Function (Vite mirrors it in dev). The SPA stores the chosen source in `localStorage` and exposes a radio toggle under Filters → Data source. Attribution in the footer follows the active source. Catalog rows still carry Ride type / Height filter facts and map both provider ids; when Queue-Times is selected, Attractions missing from that feed are still listed with Wait `—`.

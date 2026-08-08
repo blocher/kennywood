@@ -20,9 +20,10 @@ describe("normalizeQueueTimes", () => {
     );
 
     expect(feed.fetchedAt).toBe("2026-08-08T14:32:00.000Z");
+    expect(feed.source).toBe("queue-times");
     expect(feed.attractions).toEqual([
       {
-        id: 11031,
+        id: "11031",
         name: "Phantom's Revenge",
         isOpen: true,
         waitMinutes: 45,
@@ -49,6 +50,6 @@ describe("normalizeQueueTimes", () => {
       rides: [],
     });
 
-    expect(feed.attractions[0]).toMatchObject({ id: 1, isOpen: false, waitMinutes: 0 });
+    expect(feed.attractions[0]).toMatchObject({ id: "1", isOpen: false, waitMinutes: 0 });
   });
 });

@@ -197,6 +197,11 @@ a {
   font-size: clamp(1.4rem, 6vw, 2rem);
 }
 
+.row.nowait .wait {
+  color: var(--fog);
+  font-size: clamp(1.8rem, 8vw, 2.6rem);
+}
+
 .attribution {
   text-align: center;
   font-size: 0.8rem;
@@ -260,6 +265,42 @@ a {
   padding: 0 0.35rem;
   color: var(--fog);
   font-size: 0.8rem;
+}
+
+.source-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.source-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem;
+  align-items: start;
+  border: 1px solid #2c2c2c;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  cursor: pointer;
+}
+
+.source-option.on {
+  border-color: #c49200;
+  background: rgb(255 193 7 / 0.08);
+}
+
+.source-copy {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.source-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.source-hint {
+  color: var(--fog);
+  font-size: 0.78rem;
 }
 
 .readout {

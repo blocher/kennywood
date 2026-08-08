@@ -1,14 +1,18 @@
+import type { WaitSource } from "./sources";
+import { DEFAULT_WAIT_SOURCE } from "./sources";
 import type { WaitFeed } from "./types";
 
 export type FetchWaitsResult =
   | { ok: true; feed: WaitFeed }
   | { ok: false; status: number; message: string };
 
-const ENDPOINT = "/api/queue-times";
-
-export async function fetchWaits(fetcher: typeof fetch = fetch): Promise<FetchWaitsResult> {
+export async function fetchWaits(
+  source: WaitSource = DEFAULT_WAIT_SOURCE,
+  fetcher: typeof fetch = fetch,
+): Promise<FetchWaitsResult> {
+  const endpoint = `/api/waits?source=${encodeURIComponent(source)}`;
   try {
-    const res = await fetcher(ENDPOINT, { headers: { Accept: "application/json" } });
+    const res = await fetcher(endpoint, { headers: { Accept: "application/json" } });
     if (!res.ok) {
       let message = res.statusText || "Upstream error";
       try {

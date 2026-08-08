@@ -9,4 +9,8 @@ describe("waitLabel", () => {
   it("shows CLOSED when the Attraction is not open", () => {
     expect(waitLabel({ isOpen: false, waitMinutes: 0 })).toBe("CLOSED");
   });
+
+  it("shows an em dash when Queue-Times has no Wait for the Attraction", () => {
+    expect(waitLabel({ isOpen: true, waitMinutes: 0, waitUnknown: true })).toBe("—");
+  });
 });

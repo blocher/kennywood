@@ -3,13 +3,13 @@ import { fetchWaits } from "./fetchWaits";
 
 describe("fetchWaits", () => {
   it("returns ok feed on 200", async () => {
-    const feed = { fetchedAt: "t", attractions: [] };
+    const feed = { fetchedAt: "t", source: "themeparks", attractions: [] };
     const fetcher = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => feed,
     });
-    await expect(fetchWaits(fetcher)).resolves.toEqual({ ok: true, feed });
-    expect(fetcher).toHaveBeenCalledWith("/api/queue-times", expect.any(Object));
+    await expect(fetchWaits("themeparks", fetcher)).resolves.toEqual({ ok: true, feed });
+    expect(fetcher).toHaveBeenCalledWith("/api/waits?source=themeparks", expect.any(Object));
   });
 
   it("returns error on 502 without losing caller last-good responsibility", async () => {
@@ -17,12 +17,12 @@ describe("fetchWaits", () => {
       ok: false,
       status: 502,
       statusText: "Bad Gateway",
-      json: async () => ({ error: "Queue-Times returned 500" }),
+      json: async () => ({ error: "ThemeParks.wiki returned 500" }),
     });
-    await expect(fetchWaits(fetcher)).resolves.toEqual({
+    await expect(fetchWaits("themeparks", fetcher)).resolves.toEqual({
       ok: false,
       status: 502,
-      message: "Queue-Times returned 500",
+      message: "ThemeParks.wiki returned 500",
     });
   });
 });

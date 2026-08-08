@@ -8,6 +8,7 @@ function row(p: Partial<BoardRow> & Pick<BoardRow, "id" | "name" | "isOpen" | "w
     envelopeMinIn: 48,
     envelopeMaxIn: null,
     heightUnknown: false,
+    waitUnknown: false,
     ...p,
   };
 }
@@ -15,7 +16,7 @@ function row(p: Partial<BoardRow> & Pick<BoardRow, "id" | "name" | "isOpen" | "w
 describe("heightRangeMatches", () => {
   it("requires the whole hypothetical range to fit the envelope", () => {
     const r = row({
-      id: 1,
+      id: "1",
       name: "X",
       isOpen: true,
       waitMinutes: 10,
@@ -29,7 +30,7 @@ describe("heightRangeMatches", () => {
 
   it("passes unknown-min Attractions", () => {
     const r = row({
-      id: 2,
+      id: "2",
       name: "Y",
       isOpen: true,
       waitMinutes: 5,
@@ -43,8 +44,8 @@ describe("heightRangeMatches", () => {
 
 describe("applyFilters", () => {
   const rows = [
-    row({ id: 1, name: "A", isOpen: true, waitMinutes: 5, rideType: "thrill ride", envelopeMinIn: 48 }),
-    row({ id: 2, name: "B", isOpen: true, waitMinutes: 50, rideType: "roller coaster", envelopeMinIn: 52 }),
+    row({ id: "1", name: "A", isOpen: true, waitMinutes: 5, rideType: "thrill ride", envelopeMinIn: 48 }),
+    row({ id: "2", name: "B", isOpen: true, waitMinutes: 50, rideType: "roller coaster", envelopeMinIn: 52 }),
   ];
 
   it("ANDs type and wait range", () => {
@@ -52,5 +53,23 @@ describe("applyFilters", () => {
     f.types = new Set(["thrill ride"]);
     f.waitMax = 10;
     expect(applyFilters(rows, f).map((r) => r.name)).toEqual(["A"]);
+  });
+
+  it("keeps no-wait Attractions only when Wait range is unrestricted", () => {
+    const withGap = [
+      ...rows,
+      row({
+        id: "3",
+        name: "Cosmic Chaos",
+        isOpen: true,
+        waitMinutes: 0,
+        rideType: "thrill ride",
+        waitUnknown: true,
+      }),
+    ];
+    expect(applyFilters(withGap, defaultFilters()).map((r) => r.name)).toContain("Cosmic Chaos");
+    const narrowed = defaultFilters();
+    narrowed.waitMax = 20;
+    expect(applyFilters(withGap, narrowed).map((r) => r.name)).not.toContain("Cosmic Chaos");
   });
 });
