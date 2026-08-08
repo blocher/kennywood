@@ -7,6 +7,7 @@ import { createRider, loadGroup, saveGroup, type Rider } from "./group";
 import { MOCK_FEED } from "./mockFeed";
 import type { RideType } from "./catalog";
 import type { WaitFeed } from "./types";
+import { typesAfterSoloTap } from "./typeQuick";
 
 const POLL_MS = 60_000;
 const CHROME_KEY = "kennywood-waits:chrome";
@@ -153,6 +154,18 @@ document.addEventListener("click", (e) => {
       persistFilters();
       paint();
       break;
+    case "quick-all":
+      filters = clearFilters();
+      persistFilters();
+      paint();
+      break;
+    case "quick-solo": {
+      const type = t.dataset.type as RideType;
+      filters = { ...filters, types: typesAfterSoloTap(filters.types, type) };
+      persistFilters();
+      paint();
+      break;
+    }
     case "toggle-type":
     case "toggle-rider":
       return;

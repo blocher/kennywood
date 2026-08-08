@@ -1,0 +1,243 @@
+/* PROTOTYPE styles — type quick filter variants + switcher */
+
+.tqf {
+  --tqf-bg: #0c0c0c;
+  --tqf-edge: #2a2a2a;
+  --tqf-fog: #8a8a8a;
+  --tqf-amber: #ffc107;
+  --tqf-ink: #050505;
+}
+
+.tqf-ico {
+  display: inline-flex;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+.tqf-ico svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* —— A: under-header chips —— */
+.tqf-a {
+  display: flex;
+  gap: 0.4rem;
+  align-items: stretch;
+  padding: 0.45rem 0.75rem 0.55rem;
+  background: linear-gradient(#0a0a0a, #050505);
+  border-bottom: 1px solid var(--tqf-edge);
+  position: sticky;
+  top: 0;
+  z-index: 9;
+}
+
+.tqf-a .tqf-scroll {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.tqf-a .tqf-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.tqf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--tqf-edge);
+  background: #141414;
+  color: var(--tqf-fog);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tqf-chip.on {
+  background: var(--tqf-amber);
+  border-color: var(--tqf-amber);
+  color: var(--tqf-ink);
+}
+
+.tqf-all {
+  font-family: "Bebas Neue", Impact, sans-serif;
+  letter-spacing: 0.06em;
+  font-size: 0.9rem;
+  padding-inline: 0.7rem;
+}
+
+/* —— B: segmented exclusive —— */
+.tqf-b {
+  padding: 0.5rem 0.75rem 0.6rem;
+  background: #080808;
+  border-bottom: 1px solid var(--tqf-edge);
+  position: sticky;
+  top: 0;
+  z-index: 9;
+}
+
+.tqf-segmented {
+  display: flex;
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border: 1px solid var(--tqf-edge);
+  border-radius: 8px;
+  background: #111;
+}
+
+.tqf-segmented::-webkit-scrollbar {
+  display: none;
+}
+
+.tqf-seg {
+  flex: 1 0 auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 3.2rem;
+  padding: 0.4rem 0.45rem;
+  border: 0;
+  border-radius: 0;
+  border-right: 1px solid var(--tqf-edge);
+  background: transparent;
+  color: var(--tqf-fog);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tqf-seg:last-child {
+  border-right: 0;
+}
+
+.tqf-seg.on {
+  background: var(--tqf-amber);
+  color: var(--tqf-ink);
+}
+
+.tqf-seg .tqf-ico {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* —— C: icon dock multi —— */
+.tqf-c {
+  padding: 0.4rem 0.75rem 0.35rem;
+  background: #050505;
+  border-bottom: 2px solid #1a1a1a;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+}
+
+.tqf-dock {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.25rem;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.tqf-dock-btn {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  max-width: 2.75rem;
+  padding: 0.45rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--tqf-fog);
+}
+
+.tqf-dock-btn .tqf-ico {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.tqf-dock-btn.on {
+  color: var(--tqf-amber);
+  border-color: #3a3000;
+  background: #161200;
+  box-shadow: inset 0 -2px 0 var(--tqf-amber);
+}
+
+.tqf-state {
+  margin: 0.35rem 0 0;
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--tqf-fog);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+/* —— Prototype switcher —— */
+.tqf-switcher {
+  position: fixed;
+  z-index: 100;
+  left: 50%;
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 999px;
+  background: #f4f0e6;
+  color: #050505;
+  box-shadow: 0 8px 28px #000a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  max-width: calc(100vw - 1.5rem);
+}
+
+.tqf-switcher button {
+  border: 0;
+  background: #050505;
+  color: #f4f0e6;
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tqf-switcher-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 10rem;
+  text-align: center;
+}
+
+/* When prototype strip is present, keep board header sticky and let strip stick below via scroll — simple: both sticky at top stacks poorly.
+   Offset: board top stays sticky; strip is not competing if it's inside flow after header.
+   Header sticky top:0; strip sticky needs top = header height — approximate with a CSS var. */
+.board.has-tqf .top {
+  /* leave as sticky top 0 */
+}
+
+.board.has-tqf .tqf {
+  top: 0; /* after header scrolls away… actually both sticky same top stacks. Better: make strip part of sticky stack. */
+}
+
+/* Sticky stack: wrap isn't available; put strip sticky with top matching typical header ~4.5rem on phone */
+.board.has-tqf .tqf-a,
+.board.has-tqf .tqf-b,
+.board.has-tqf .tqf-c {
+  top: 4.6rem;
+}

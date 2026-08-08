@@ -5,6 +5,7 @@ import { applyChrome, type BoardChrome } from "./chrome";
 import { ALL_RIDE_TYPES, applyFilters, type FilterState } from "./filters";
 import { formatHeight } from "./heightFormat";
 import type { Rider } from "./group";
+import { renderTypeQuick } from "./typeQuick";
 
 export type BoardOptions = {
   stale?: boolean;
@@ -164,19 +165,24 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
       ? `<li class="empty">No Attractions match <button type="button" data-action="clear-filters">Clear filters</button></li>`
       : rows.join("");
 
+  const typeQuick = filters ? renderTypeQuick(filters) : "";
+
   return `
     <div class="board">
       <header class="top">
-        <div>
-          <h1>Kennywood Waits</h1>
-          <p class="status" role="status">${escapeHtml(statusText(feed, opts))}</p>
+        <div class="top-main">
+          <div>
+            <h1>Kennywood Waits</h1>
+            <p class="status" role="status">${escapeHtml(statusText(feed, opts))}</p>
+          </div>
+          <div class="actions">
+            <button type="button" data-action="toggle-sort">${chrome.sort === "wait" ? "Wait ↑" : "A–Z"}</button>
+            <button type="button" data-action="toggle-closed">${chrome.hideClosed ? "Closed hidden" : "Hide closed"}</button>
+            <button type="button" data-action="open-group">Group${selected.size ? ` (${selected.size})` : ""}</button>
+            <button type="button" class="primary" data-action="open-filters">Filters</button>
+          </div>
         </div>
-        <div class="actions">
-          <button type="button" data-action="toggle-sort">${chrome.sort === "wait" ? "Wait ↑" : "A–Z"}</button>
-          <button type="button" data-action="toggle-closed">${chrome.hideClosed ? "Closed hidden" : "Hide closed"}</button>
-          <button type="button" data-action="open-group">Group${selected.size ? ` (${selected.size})` : ""}</button>
-          <button type="button" class="primary" data-action="open-filters">Filters</button>
-        </div>
+        ${typeQuick}
       </header>
       <ul class="list">${empty}</ul>
       <p class="attribution">

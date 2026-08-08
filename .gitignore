@@ -3,6 +3,7 @@ dist/
 dist-ssr/
 *.local
 .DS_Store
+.wrangler/
 
 # Prototype deps (kept under prototype/ for historical record)
 prototype/waits-board/node_modules/
