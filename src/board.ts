@@ -1,5 +1,6 @@
 import type { WaitFeed } from "./types";
 import { waitLabel } from "./waitLabel";
+import { joinBoardRows, rowMeta } from "./joinBoard";
 
 function statusText(fetchedAt: string): string {
   const mins = Math.max(0, Math.round((Date.now() - Date.parse(fetchedAt)) / 60_000));
@@ -8,9 +9,9 @@ function statusText(fetchedAt: string): string {
   return `Updated ${mins} min ago · mock data`;
 }
 
-/** Render Variant A stadium scoreboard from a WaitFeed. */
+/** Render Variant A stadium scoreboard from a WaitFeed joined to the catalog. */
 export function renderBoard(feed: WaitFeed): string {
-  const rows = [...feed.attractions]
+  const rows = joinBoardRows(feed.attractions)
     .sort((a, b) => {
       const aw = a.isOpen ? a.waitMinutes : 9999;
       const bw = b.isOpen ? b.waitMinutes : 9999;
@@ -24,6 +25,7 @@ export function renderBoard(feed: WaitFeed): string {
         <li class="row${closed}">
           <div class="main">
             <span class="name">${escapeHtml(a.name)}</span>
+            <span class="meta">${escapeHtml(rowMeta(a))}</span>
           </div>
           <span class="wait" aria-label="Wait ${label}">${label}</span>
         </li>`;

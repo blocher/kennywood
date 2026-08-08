@@ -103,6 +103,13 @@ a {
   font-weight: 700;
 }
 
+.meta {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--fog);
+  font-size: 0.78rem;
+}
+
 .wait {
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-weight: 600;
