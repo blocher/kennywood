@@ -19,35 +19,57 @@ export const QUICK_TYPES: { type: RideType; short: string }[] = [
   { type: "kiddie ride", short: "Kids" },
 ];
 
-function isShowingAll(types: Set<RideType>): boolean {
+export function isShowingAllTypes(types: Set<RideType>): boolean {
   return QUICK_TYPES.every((t) => types.has(t.type)) && types.size >= QUICK_TYPES.length;
 }
 
-function activeSolo(types: Set<RideType>): RideType | null {
-  if (types.size !== 1) return null;
-  const only = [...types][0]!;
-  return QUICK_TYPES.some((t) => t.type === only) ? only : null;
-}
-
-/** Always-visible Ride type chips: All + icon/label; tap solos, tap again clears to All. */
-export function renderTypeQuick(filters: FilterState): string {
-  const solo = activeSolo(filters.types);
-  const allOn = !solo && isShowingAll(filters.types);
+function typeChipButtons(filters: FilterState, opts: { wrapScroll: boolean }): string {
+  const allOn = isShowingAllTypes(filters.types);
   const chips = QUICK_TYPES.map(({ type, short }) => {
-    const on = solo === type;
-    return `<button type="button" class="type-chip ${on ? "on" : ""}" data-action="quick-solo" data-type="${type}" aria-pressed="${on}">
+    const on = !allOn && filters.types.has(type);
+    return `<button type="button" class="type-chip ${on ? "on" : ""}" data-action="quick-toggle" data-type="${type}" aria-pressed="${on}">
       <span class="type-ico">${TYPE_ICONS[type] ?? ""}</span>
       <span class="type-lbl">${short}</span>
     </button>`;
   }).join("");
 
+  const allBtn = `<button type="button" class="type-chip type-all ${allOn ? "on" : ""}" data-action="quick-all" aria-pressed="${allOn}">All</button>`;
+  if (opts.wrapScroll) {
+    return `${allBtn}<div class="type-scroll">${chips}</div>`;
+  }
+  return `${allBtn}${chips}`;
+}
+
+/** Always-visible Ride type chips: All + icon/label; multi-select when All is off. */
+export function renderTypeQuick(filters: FilterState): string {
   return `<nav class="type-quick" aria-label="Ride type">
-    <button type="button" class="type-chip type-all ${allOn ? "on" : ""}" data-action="quick-all" aria-pressed="${allOn}">All</button>
-    <div class="type-scroll">${chips}</div>
+    ${typeChipButtons(filters, { wrapScroll: true })}
   </nav>`;
 }
 
-export function typesAfterSoloTap(current: Set<RideType>, type: RideType): Set<RideType> {
-  const only = current.size === 1 && current.has(type);
-  return only ? new Set(ALL_RIDE_TYPES) : new Set([type]);
+/** Same chips for the Filters sheet (wrapped, no horizontal scroll strip). */
+export function renderTypeFilterChips(filters: FilterState): string {
+  return `<div class="type-chips" role="group" aria-label="Ride type">
+    ${typeChipButtons(filters, { wrapScroll: false })}
+  </div>`;
+}
+
+/**
+ * Tap a type chip:
+ * - From All → start a selection with only that type
+ * - Otherwise → toggle that type; empty or all-quick selected returns to All
+ */
+export function typesAfterTypeTap(current: Set<RideType>, type: RideType): Set<RideType> {
+  if (isShowingAllTypes(current)) {
+    return new Set([type]);
+  }
+  const next = new Set(current);
+  if (next.has(type)) next.delete(type);
+  else next.add(type);
+
+  const selectedQuick = QUICK_TYPES.filter((t) => next.has(t.type));
+  if (selectedQuick.length === 0 || selectedQuick.length === QUICK_TYPES.length) {
+    return new Set(ALL_RIDE_TYPES);
+  }
+  return new Set(selectedQuick.map((t) => t.type));
 }

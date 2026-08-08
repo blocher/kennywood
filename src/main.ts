@@ -7,7 +7,8 @@ import { createRider, loadGroup, saveGroup, type Rider } from "./group";
 import { MOCK_FEED } from "./mockFeed";
 import type { RideType } from "./catalog";
 import type { WaitFeed } from "./types";
-import { typesAfterSoloTap } from "./typeQuick";
+import { typesAfterTypeTap } from "./typeQuick";
+import { formatHeight } from "./heightFormat";
 
 const POLL_MS = 60_000;
 const CHROME_KEY = "kennywood-waits:chrome";
@@ -37,6 +38,24 @@ function paint() {
     riders,
     selectedRiderIds,
   });
+}
+
+/** Refresh the attraction list without remounting an open sheet (keeps sliders alive). */
+function paintList() {
+  const next = document.createElement("div");
+  next.innerHTML = renderBoard(lastGood, {
+    stale,
+    statusOverride,
+    chrome: chromeState,
+    filters,
+    filtersOpen,
+    groupOpen,
+    riders,
+    selectedRiderIds,
+  });
+  const newList = next.querySelector(".list");
+  const curList = app!.querySelector(".list");
+  if (newList && curList) curList.replaceWith(newList);
 }
 
 function persistChrome() {
@@ -159,14 +178,13 @@ document.addEventListener("click", (e) => {
       persistFilters();
       paint();
       break;
-    case "quick-solo": {
+    case "quick-toggle": {
       const type = t.dataset.type as RideType;
-      filters = { ...filters, types: typesAfterSoloTap(filters.types, type) };
+      filters = { ...filters, types: typesAfterTypeTap(filters.types, type) };
       persistFilters();
       paint();
       break;
     }
-    case "toggle-type":
     case "toggle-rider":
       return;
     case "delete-rider": {
@@ -201,15 +219,6 @@ document.addEventListener("change", (e) => {
   const host = el.closest<HTMLElement>("[data-action]");
   if (!host) return;
   const action = host.dataset.action;
-  if (action === "toggle-type") {
-    const type = host.dataset.type as RideType;
-    const types = new Set(filters.types);
-    if (types.has(type)) types.delete(type);
-    else types.add(type);
-    filters = { ...filters, types };
-    persistFilters();
-    paint();
-  }
   if (action === "toggle-rider") {
     const id = host.dataset.id!;
     const next = new Set(selectedRiderIds);
@@ -220,31 +229,57 @@ document.addEventListener("change", (e) => {
   }
 });
 
+function syncDualRange(dual: HTMLElement, lo: number, hi: number, min: number, max: number) {
+  const span = max - min || 1;
+  dual.style.setProperty("--lo", `${((lo - min) / span) * 100}%`);
+  dual.style.setProperty("--hi", `${((hi - min) / span) * 100}%`);
+  const loInput = dual.querySelector<HTMLInputElement>('[data-bound="lo"]');
+  const hiInput = dual.querySelector<HTMLInputElement>('[data-bound="hi"]');
+  if (loInput) loInput.value = String(lo);
+  if (hiInput) hiInput.value = String(hi);
+}
+
 document.addEventListener("input", (e) => {
   const el = e.target as HTMLInputElement;
   const host = el.closest<HTMLElement>("[data-action]");
   if (!host) return;
   const action = host.dataset.action;
   const value = Number(el.value);
-  if (action === "wait-min") {
-    filters = { ...filters, waitMin: Math.min(value, filters.waitMax) };
+  const dual = host.closest<HTMLElement>(".dual-range");
+  const field = host.closest<HTMLElement>(".range-field");
+  const readout = field?.querySelector<HTMLElement>("[data-readout]");
+
+  if (action === "wait-min" || action === "wait-max") {
+    let waitMin = filters.waitMin;
+    let waitMax = filters.waitMax;
+    if (action === "wait-min") {
+      waitMin = value;
+      if (waitMin > waitMax) waitMax = waitMin;
+    } else {
+      waitMax = value;
+      if (waitMax < waitMin) waitMin = waitMax;
+    }
+    filters = { ...filters, waitMin, waitMax };
     persistFilters();
-    paint();
+    if (dual) syncDualRange(dual, waitMin, waitMax, 0, 120);
+    if (readout) readout.textContent = `${waitMin} – ${waitMax} min`;
+    paintList();
   }
-  if (action === "wait-max") {
-    filters = { ...filters, waitMax: Math.max(value, filters.waitMin) };
+  if (action === "height-min" || action === "height-max") {
+    let heightMin = filters.heightMin;
+    let heightMax = filters.heightMax;
+    if (action === "height-min") {
+      heightMin = value;
+      if (heightMin > heightMax) heightMax = heightMin;
+    } else {
+      heightMax = value;
+      if (heightMax < heightMin) heightMin = heightMax;
+    }
+    filters = { ...filters, heightMin, heightMax };
     persistFilters();
-    paint();
-  }
-  if (action === "height-min") {
-    filters = { ...filters, heightMin: Math.min(value, filters.heightMax) };
-    persistFilters();
-    paint();
-  }
-  if (action === "height-max") {
-    filters = { ...filters, heightMax: Math.max(value, filters.heightMin) };
-    persistFilters();
-    paint();
+    if (dual) syncDualRange(dual, heightMin, heightMax, 0, 84);
+    if (readout) readout.textContent = `${formatHeight(heightMin)} – ${formatHeight(heightMax)}`;
+    paintList();
   }
 });
 

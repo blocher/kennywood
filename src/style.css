@@ -263,30 +263,107 @@ a {
 }
 
 .readout {
-  margin: 0.35rem 0 0;
+  margin: 0 0 0.65rem;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   color: var(--amber);
 }
 
-.chips {
+.type-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
   gap: 0.35rem;
-  border: 1px solid #2c2c2c;
-  border-radius: 999px;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.8rem;
 }
 
-.chip.on {
-  border-color: #c49200;
-  background: rgb(255 193 7 / 0.12);
+.dual-range {
+  position: relative;
+  height: 1.75rem;
+  margin: 0.15rem 0 0.25rem;
+}
+
+.dual-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 999px;
+  background: #2a2a2a;
+  pointer-events: none;
+}
+
+.dual-track::before {
+  content: "";
+  position: absolute;
+  left: var(--lo, 0%);
+  right: calc(100% - var(--hi, 100%));
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: var(--amber);
+}
+
+.dual-range input[type="range"] {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  width: 100%;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.dual-range input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--amber);
+  box-shadow: 0 0 0 1px #c49200;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.dual-range input[type="range"]::-moz-range-thumb {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--amber);
+  box-shadow: 0 0 0 1px #c49200;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.dual-range input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: transparent;
+}
+
+.dual-range input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: transparent;
+}
+
+.dual-range input[data-bound="hi"] {
+  z-index: 2;
+}
+
+.dual-range input[data-bound="lo"] {
+  z-index: 3;
+}
+
+.dual-range input[type="range"]:active {
+  z-index: 4;
+}
+
+.dual-range input[type="range"]:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.dual-range input[type="range"]:active::-moz-range-thumb {
+  cursor: grabbing;
 }
 
 .btn-block {
@@ -326,16 +403,36 @@ a {
   color: var(--fog);
 }
 
+.add-person {
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border: 1px solid #2c2c2c;
+  border-radius: 12px;
+  background: #101010;
+}
+
+.add-person h3 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--paper);
+}
+
 .rider-form {
   display: grid;
   gap: 0.5rem;
-  margin-top: 0.75rem;
 }
 
 .rider-form label {
   display: grid;
   gap: 0.25rem;
   font-size: 0.85rem;
+}
+
+.rider-form .height-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 }
 
 .rider-form input {

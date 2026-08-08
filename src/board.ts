@@ -2,10 +2,10 @@ import type { WaitFeed } from "./types";
 import { waitLabel } from "./waitLabel";
 import { joinBoardRows, rowMeta } from "./joinBoard";
 import { applyChrome, type BoardChrome } from "./chrome";
-import { ALL_RIDE_TYPES, applyFilters, type FilterState } from "./filters";
+import { applyFilters, type FilterState } from "./filters";
 import { formatHeight } from "./heightFormat";
 import type { Rider } from "./group";
-import { renderTypeQuick } from "./typeQuick";
+import { renderTypeFilterChips, renderTypeQuick } from "./typeQuick";
 
 export type BoardOptions = {
   stale?: boolean;
@@ -34,15 +34,34 @@ function escapeHtml(s: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function filtersSheet(filters: FilterState): string {
-  const chips = ALL_RIDE_TYPES.map((t) => {
-    const on = filters.types.has(t);
-    return `<label class="chip ${on ? "on" : ""}">
-      <input type="checkbox" data-action="toggle-type" data-type="${t}" ${on ? "checked" : ""} />
-      ${escapeHtml(t)}
-    </label>`;
-  }).join("");
+function dualRange(opts: {
+  legend: string;
+  min: number;
+  max: number;
+  lo: number;
+  hi: number;
+  loAction: string;
+  hiAction: string;
+  readout: string;
+}): string {
+  const span = opts.max - opts.min || 1;
+  const left = ((opts.lo - opts.min) / span) * 100;
+  const right = ((opts.hi - opts.min) / span) * 100;
+  return `
+    <fieldset class="range-field">
+      <legend>${opts.legend}</legend>
+      <p class="readout" data-readout>${opts.readout}</p>
+      <div class="dual-range" style="--lo:${left}%; --hi:${right}%;">
+        <div class="dual-track" aria-hidden="true"></div>
+        <input type="range" min="${opts.min}" max="${opts.max}" value="${opts.lo}"
+          data-action="${opts.loAction}" data-bound="lo" aria-label="${opts.legend} minimum" />
+        <input type="range" min="${opts.min}" max="${opts.max}" value="${opts.hi}"
+          data-action="${opts.hiAction}" data-bound="hi" aria-label="${opts.legend} maximum" />
+      </div>
+    </fieldset>`;
+}
 
+function filtersSheet(filters: FilterState): string {
   return `
     <div class="sheet-backdrop" data-action="close-filters"></div>
     <div class="sheet" role="dialog" aria-label="Filters">
@@ -51,63 +70,71 @@ function filtersSheet(filters: FilterState): string {
         <button type="button" data-action="close-filters">Close</button>
       </header>
       <div class="sheet-body">
-        <fieldset>
-          <legend>Wait (min)</legend>
-          <label>Min <input type="range" min="0" max="120" value="${filters.waitMin}" data-action="wait-min" /></label>
-          <label>Max <input type="range" min="0" max="120" value="${filters.waitMax}" data-action="wait-max" /></label>
-          <p class="readout">${filters.waitMin} – ${filters.waitMax} min</p>
-        </fieldset>
-        <fieldset>
-          <legend>Height range</legend>
-          <label>Low <input type="range" min="0" max="84" value="${filters.heightMin}" data-action="height-min" /></label>
-          <label>High <input type="range" min="0" max="84" value="${filters.heightMax}" data-action="height-max" /></label>
-          <p class="readout">${formatHeight(filters.heightMin)} – ${formatHeight(filters.heightMax)}</p>
-        </fieldset>
+        ${dualRange({
+          legend: "Wait (min)",
+          min: 0,
+          max: 120,
+          lo: filters.waitMin,
+          hi: filters.waitMax,
+          loAction: "wait-min",
+          hiAction: "wait-max",
+          readout: `${filters.waitMin} – ${filters.waitMax} min`,
+        })}
+        ${dualRange({
+          legend: "Height range",
+          min: 0,
+          max: 84,
+          lo: filters.heightMin,
+          hi: filters.heightMax,
+          loAction: "height-min",
+          hiAction: "height-max",
+          readout: `${formatHeight(filters.heightMin)} – ${formatHeight(filters.heightMax)}`,
+        })}
         <fieldset>
           <legend>Ride type</legend>
-          <div class="chips">${chips}</div>
+          ${renderTypeFilterChips(filters)}
         </fieldset>
         <button type="button" class="btn-block" data-action="clear-filters">Clear filters</button>
       </div>
     </div>`;
 }
 
-function groupSheet(riders: Rider[], selected: Set<string>): string {
-  if (riders.length === 0) {
-    return `
-      <div class="sheet-backdrop" data-action="close-group"></div>
-      <div class="sheet" role="dialog" aria-label="Group">
-        <header class="sheet-head">
-          <h2>Group</h2>
-          <button type="button" data-action="close-group">Close</button>
-        </header>
-        <div class="sheet-body">
-          <form data-action="add-rider" class="rider-form">
-            <label>First name <input name="name" required autocomplete="given-name" /></label>
-            <label>Feet <input name="feet" type="number" min="0" max="8" value="4" required /></label>
-            <label>Inches <input name="inches" type="number" min="0" max="11" value="0" required /></label>
-            <button type="submit" class="primary btn-block">Add Rider</button>
-          </form>
+function addRiderForm(): string {
+  return `
+    <div class="add-person">
+      <h3>Add a person</h3>
+      <form data-action="add-rider" class="rider-form">
+        <label>First name <input name="name" required autocomplete="given-name" /></label>
+        <div class="height-row">
+          <label>Feet <input name="feet" type="number" min="0" max="8" value="4" required /></label>
+          <label>Inches <input name="inches" type="number" min="0" max="11" value="0" required /></label>
         </div>
-      </div>`;
-  }
+        <button type="submit" class="primary btn-block">Add Rider</button>
+      </form>
+    </div>`;
+}
 
-  const list = riders
-    .map((r) => {
-      const on = selected.has(r.id);
-      const ft = Math.floor(r.heightIn / 12);
-      const inn = r.heightIn % 12;
-      return `<div class="rider ${on ? "on" : ""}">
-        <label>
-          <input type="checkbox" data-action="toggle-rider" data-id="${r.id}" ${on ? "checked" : ""} />
-          <span class="rider-name">${escapeHtml(r.name)}</span>
-          <span class="rider-h">${ft}'${inn}"</span>
-        </label>
-        <button type="button" data-action="edit-rider" data-id="${r.id}">Edit</button>
-        <button type="button" data-action="delete-rider" data-id="${r.id}">Delete</button>
-      </div>`;
-    })
-    .join("");
+function groupSheet(riders: Rider[], selected: Set<string>): string {
+  const list =
+    riders.length === 0
+      ? `<p class="hint">No one in your Group yet.</p>`
+      : `<p class="hint">Select riders to show only Attractions they all can ride.</p>
+        ${riders
+          .map((r) => {
+            const on = selected.has(r.id);
+            const ft = Math.floor(r.heightIn / 12);
+            const inn = r.heightIn % 12;
+            return `<div class="rider ${on ? "on" : ""}">
+              <label>
+                <input type="checkbox" data-action="toggle-rider" data-id="${r.id}" ${on ? "checked" : ""} />
+                <span class="rider-name">${escapeHtml(r.name)}</span>
+                <span class="rider-h">${ft}'${inn}"</span>
+              </label>
+              <button type="button" data-action="edit-rider" data-id="${r.id}">Edit</button>
+              <button type="button" data-action="delete-rider" data-id="${r.id}">Delete</button>
+            </div>`;
+          })
+          .join("")}`;
 
   return `
     <div class="sheet-backdrop" data-action="close-group"></div>
@@ -117,14 +144,8 @@ function groupSheet(riders: Rider[], selected: Set<string>): string {
         <button type="button" data-action="close-group">Close</button>
       </header>
       <div class="sheet-body">
-        <p class="hint">Select riders to show only Attractions they all can ride.</p>
         ${list}
-        <form data-action="add-rider" class="rider-form">
-          <label>First name <input name="name" required autocomplete="given-name" /></label>
-          <label>Feet <input name="feet" type="number" min="0" max="8" value="4" required /></label>
-          <label>Inches <input name="inches" type="number" min="0" max="11" value="0" required /></label>
-          <button type="submit" class="primary btn-block">Add Rider</button>
-        </form>
+        ${addRiderForm()}
       </div>
     </div>`;
 }
