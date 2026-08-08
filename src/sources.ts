@@ -20,11 +20,20 @@ export function parseWaitSource(raw: string | null | undefined): WaitSource {
   return raw === "queue-times" ? "queue-times" : "themeparks";
 }
 
-export function attributionFor(source: WaitSource): { text: string; href: string } {
-  if (source === "queue-times") {
-    return { text: "Queue-Times.com", href: "https://queue-times.com/en-US" };
-  }
-  return { text: "ThemeParks.wiki", href: "https://themeparks.wiki/" };
+const ATTRIBUTION_LINKS: { id: WaitSource; text: string; href: string }[] = [
+  { id: "themeparks", text: "ThemeParks.wiki", href: "https://themeparks.wiki/" },
+  { id: "queue-times", text: "Queue-Times.com", href: "https://queue-times.com/en-US" },
+];
+
+/** Subtle footer credit naming both providers and marking the active source. */
+export function renderAttribution(source: WaitSource): string {
+  const links = ATTRIBUTION_LINKS.map((s) => {
+    const active = s.id === source;
+    return `<a class="attr-link${active ? " active" : ""}" href="${s.href}" target="_blank" rel="noopener noreferrer"${
+      active ? ' aria-current="true"' : ""
+    }>${s.text}${active ? ' <span class="attr-active">(active)</span>' : ""}</a>`;
+  }).join('<span class="attr-sep"> · </span>');
+  return `<p class="attribution">Data from ${links}</p>`;
 }
 
 /** Kennywood destination entity on ThemeParks.wiki. */

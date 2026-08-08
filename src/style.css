@@ -91,6 +91,33 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  align-items: center;
+}
+
+.sort-toggle {
+  display: inline-flex;
+  border: 1px solid #2c2c2c;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #121212;
+}
+
+.sort-toggle button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--fog);
+  padding: 0.45rem 0.65rem;
+}
+
+.sort-toggle button + button {
+  border-left: 1px solid #2c2c2c;
+}
+
+.sort-toggle button.on {
+  background: #2a2a2a;
+  color: var(--paper);
+  font-weight: 700;
 }
 
 .type-quick {
@@ -204,9 +231,34 @@ a {
 
 .attribution {
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
+  color: #5c5c5c;
+  padding: 1.25rem 1rem 1.75rem;
+  letter-spacing: 0.01em;
+}
+
+.attribution a {
+  color: #7a7a7a;
+  text-decoration: none;
+}
+
+.attribution a:hover {
   color: var(--fog);
-  padding: 1.5rem 1rem 2rem;
+  text-decoration: underline;
+}
+
+.attribution .attr-link.active {
+  color: #a8a8a8;
+}
+
+.attribution .attr-active {
+  font-size: 0.65rem;
+  color: #6e6e6e;
+}
+
+.attribution .attr-sep {
+  color: #3a3a3a;
+  margin: 0 0.1rem;
 }
 
 .empty {

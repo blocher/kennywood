@@ -161,16 +161,15 @@ document.addEventListener("click", (e) => {
   if (!t) return;
   const action = t.dataset.action;
   switch (action) {
-    case "toggle-sort":
-      chromeState = { ...chromeState, sort: chromeState.sort === "wait" ? "alpha" : "wait" };
-      persistChrome();
-      paint();
+    case "set-sort": {
+      const next = t.dataset.sort === "alpha" ? "alpha" : "wait";
+      if (next !== chromeState.sort) {
+        chromeState = { ...chromeState, sort: next };
+        persistChrome();
+        paint();
+      }
       break;
-    case "toggle-closed":
-      chromeState = { ...chromeState, hideClosed: !chromeState.hideClosed };
-      persistChrome();
-      paint();
-      break;
+    }
     case "open-filters":
       filtersOpen = true;
       groupOpen = false;

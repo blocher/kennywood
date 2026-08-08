@@ -8,7 +8,7 @@ import type { Rider } from "./group";
 import { renderTypeFilterChips, renderTypeQuick } from "./typeQuick";
 import {
   WAIT_SOURCES,
-  attributionFor,
+  renderAttribution,
   type WaitSource,
   DEFAULT_WAIT_SOURCE,
 } from "./sources";
@@ -181,7 +181,6 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
   const selected = opts.selectedRiderIds ?? new Set<string>();
   const riders = opts.riders ?? [];
   const source = opts.source ?? feed.source ?? DEFAULT_WAIT_SOURCE;
-  const credit = attributionFor(source);
 
   let joined = joinBoardRows(feed.attractions, source);
   if (filters) joined = applyFilters(joined, filters);
@@ -224,19 +223,30 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
             <p class="status" role="status">${escapeHtml(statusText(feed, opts))}</p>
           </div>
           <div class="actions">
-            <button type="button" data-action="toggle-sort">${chrome.sort === "wait" ? "Wait ↑" : "A–Z"}</button>
-            <button type="button" data-action="toggle-closed">${chrome.hideClosed ? "Closed hidden" : "Hide closed"}</button>
-            <button type="button" data-action="open-group">Group${selected.size ? ` (${selected.size})` : ""}</button>
+            <div class="sort-toggle" role="group" aria-label="Sort by">
+              <button
+                type="button"
+                data-action="set-sort"
+                data-sort="wait"
+                class="${chrome.sort === "wait" ? "on" : ""}"
+                aria-pressed="${chrome.sort === "wait" ? "true" : "false"}"
+              >Wait ↑</button>
+              <button
+                type="button"
+                data-action="set-sort"
+                data-sort="alpha"
+                class="${chrome.sort === "alpha" ? "on" : ""}"
+                aria-pressed="${chrome.sort === "alpha" ? "true" : "false"}"
+              >A–Z</button>
+            </div>
+            <button type="button" data-action="open-group">Group's Heights${selected.size ? ` (${selected.size})` : ""}</button>
             <button type="button" class="primary" data-action="open-filters">Filters</button>
           </div>
         </div>
         ${typeQuick}
       </header>
       <ul class="list">${empty}</ul>
-      <p class="attribution">
-        Powered by
-        <a href="${escapeHtml(credit.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(credit.text)}</a>
-      </p>
+      ${renderAttribution(source)}
       ${opts.filtersOpen && filters ? filtersSheet(filters, source) : ""}
       ${opts.groupOpen ? groupSheet(riders, selected) : ""}
     </div>`;
