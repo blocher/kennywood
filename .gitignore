@@ -4,6 +4,10 @@ dist-ssr/
 *.local
 .DS_Store
 .wrangler/
+.env
+.env.*
+!.env.example
+.dev.vars
 
 # Prototype deps (kept under prototype/ for historical record)
 prototype/waits-board/node_modules/

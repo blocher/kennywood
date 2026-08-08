@@ -15,7 +15,7 @@ import {
   type WaitSource,
 } from "./sources";
 
-const POLL_MS = 60_000;
+const POLL_MS = 5 * 60_000;
 const CHROME_KEY = "kennywood-waits:chrome";
 const FILTERS_KEY = "kennywood-waits:filters";
 const SOURCE_KEY = "kennywood-waits:source";

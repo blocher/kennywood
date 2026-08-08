@@ -116,7 +116,7 @@ Retrieved 2026-08-08 from Accessibility Individual Ride Information + Attraction
 | 900012 | Coal Haulin’ Convoy | family ride | unknown – none | Attraction Family Ride; under 36″ companion |
 | 900015 | Fire Bustin’ Brigade | family ride | unknown – none | Attraction Family Ride; under 36″ companion; Temporarily Unavailable |
 | 900018 | Parker's Cloud Cruisers | family ride | unknown – none | Attraction Family Ride; under 36″ companion |
-| 900017 | Lil’ Phantom | roller coaster | unknown – none | Attraction Roller Coaster (Kiddieland); under 36″ companion |
+| 900017 | Lil’ Phantom | kiddie ride | unknown – none | Product: Kids (Attraction page says Roller Coaster / Kiddieland); under 36″ companion |
 | 900013 | Crazy Trolley | kiddie ride | unknown – none | Accessibility Children’s Rides; under 42″ companion |
 | 900014 | Dizzy Dynamo | kiddie ride | unknown – none | Accessibility Children’s Rides; under 36″ companion |
 | 900016 | Kenny's Karousel | kiddie ride | 36 – 52 | Accessibility Children’s Rides |

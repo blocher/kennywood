@@ -1,12 +1,13 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import { normalizeQueueTimes, type QueueTimesPayload } from "./src/normalizeQueueTimes";
 import { normalizeThemeParks, themeParksLiveUrl } from "./src/normalizeThemeParks";
 import { parseWaitSource } from "./src/sources";
 
 const QT_UPSTREAM = "https://queue-times.com/parks/312/queue_times.json";
+const CACHE_MAX_AGE_SEC = 300;
 
 /** Dev-only same-origin /api/waits (+ legacy /api/queue-times) mirroring Cloudflare Functions. */
-function waitsDevProxy(): Plugin {
+function waitsDevProxy(apiKey: string | undefined): Plugin {
   return {
     name: "kennywood-waits-dev-proxy",
     configureServer(server) {
@@ -22,8 +23,10 @@ function waitsDevProxy(): Plugin {
           if (source === "queue-times") {
             const upstream = await fetch(QT_UPSTREAM, { headers: { Accept: "application/json" } });
             if (!upstream.ok) {
-              res.statusCode = 502;
+              res.statusCode = upstream.status === 429 ? 429 : 502;
               res.setHeader("Content-Type", "application/json");
+              const retryAfter = upstream.headers.get("Retry-After");
+              if (retryAfter) res.setHeader("Retry-After", retryAfter);
               res.end(JSON.stringify({ error: `Queue-Times returned ${upstream.status}` }));
               return;
             }
@@ -31,17 +34,23 @@ function waitsDevProxy(): Plugin {
             const feed = normalizeQueueTimes(payload, new Date().toISOString());
             res.statusCode = 200;
             res.setHeader("Content-Type", "application/json; charset=utf-8");
-            res.setHeader("Cache-Control", "public, max-age=60");
+            res.setHeader("Cache-Control", `public, max-age=${CACHE_MAX_AGE_SEC}`);
             res.end(JSON.stringify(feed));
             return;
           }
 
-          const upstream = await fetch(themeParksLiveUrl(), {
-            headers: { Accept: "application/json", "User-Agent": "kennywood-waits/0.1" },
-          });
+          const headers: Record<string, string> = {
+            Accept: "application/json",
+            "User-Agent": "kennywood-waits/0.1",
+          };
+          if (apiKey) headers["x-api-key"] = apiKey;
+
+          const upstream = await fetch(themeParksLiveUrl(), { headers });
           if (!upstream.ok) {
-            res.statusCode = 502;
+            res.statusCode = upstream.status === 429 ? 429 : 502;
             res.setHeader("Content-Type", "application/json");
+            const retryAfter = upstream.headers.get("Retry-After");
+            if (retryAfter) res.setHeader("Retry-After", retryAfter);
             res.end(JSON.stringify({ error: `ThemeParks.wiki returned ${upstream.status}` }));
             return;
           }
@@ -49,7 +58,7 @@ function waitsDevProxy(): Plugin {
           const feed = normalizeThemeParks(payload, new Date().toISOString());
           res.statusCode = 200;
           res.setHeader("Content-Type", "application/json; charset=utf-8");
-          res.setHeader("Cache-Control", "public, max-age=60");
+          res.setHeader("Cache-Control", `public, max-age=${CACHE_MAX_AGE_SEC}`);
           res.end(JSON.stringify(feed));
         } catch (e) {
           res.statusCode = 504;
@@ -61,11 +70,14 @@ function waitsDevProxy(): Plugin {
   };
 }
 
-export default defineConfig({
-  root: ".",
-  publicDir: "public",
-  plugins: [waitsDevProxy()],
-  test: {
-    environment: "node",
-  },
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  return {
+    root: ".",
+    publicDir: "public",
+    plugins: [waitsDevProxy(env.THEMEPARKS_API_KEY || process.env.THEMEPARKS_API_KEY)],
+    test: {
+      environment: "node",
+    },
+  };
 });

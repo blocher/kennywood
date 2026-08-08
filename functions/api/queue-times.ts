@@ -22,7 +22,7 @@ function json(body: unknown, status: number): Response {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": status >= 500 ? "no-store" : "public, max-age=60",
+      "Cache-Control": status >= 500 ? "no-store" : "public, max-age=300",
     },
   });
 }
