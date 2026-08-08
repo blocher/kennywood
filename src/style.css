@@ -1,0 +1,127 @@
+/* Variant A — stadium scoreboard */
+:root {
+  color-scheme: dark;
+  --ink: #050505;
+  --paper: #f4f0e6;
+  --amber: #ffc107;
+  --fog: #8a8a8a;
+  --line: #1d1d1d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
+button {
+  font: inherit;
+  cursor: not-allowed;
+  border: 1px solid #2c2c2c;
+  background: #1a1a1a;
+  color: var(--paper);
+  border-radius: 6px;
+  padding: 0.45rem 0.7rem;
+  opacity: 0.55;
+}
+
+button.primary {
+  background: var(--amber);
+  color: var(--ink);
+  border-color: var(--amber);
+  font-weight: 700;
+}
+
+a {
+  color: var(--amber);
+}
+
+.board {
+  min-height: 100dvh;
+}
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  justify-content: space-between;
+  align-items: end;
+  padding: 0.9rem 1rem 0.75rem;
+  background: linear-gradient(#050505, #050505ee 70%, transparent);
+  border-bottom: 2px solid var(--amber);
+}
+
+.top h1 {
+  margin: 0;
+  font-family: "Bebas Neue", Impact, sans-serif;
+  font-size: clamp(2rem, 8vw, 3rem);
+  letter-spacing: 0.04em;
+  line-height: 0.95;
+  color: var(--amber);
+}
+
+.status {
+  margin: 0.15rem 0 0;
+  color: var(--fog);
+  font-size: 0.85rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.name {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.wait {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 600;
+  font-size: clamp(2.4rem, 12vw, 3.6rem);
+  line-height: 1;
+  color: var(--amber);
+  letter-spacing: -0.04em;
+  min-width: 3.2ch;
+  text-align: right;
+}
+
+.row.closed .wait {
+  color: var(--fog);
+  font-size: clamp(1.4rem, 6vw, 2rem);
+}
+
+.attribution {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--fog);
+  padding: 1.5rem 1rem 2rem;
+}

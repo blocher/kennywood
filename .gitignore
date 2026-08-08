@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.DS_Store
+
+# Prototype deps (throwaway branch artifact)
+prototype/waits-board/node_modules/
