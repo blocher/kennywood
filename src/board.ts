@@ -2,15 +2,21 @@ import type { WaitFeed } from "./types";
 import { waitLabel } from "./waitLabel";
 import { joinBoardRows, rowMeta } from "./joinBoard";
 
-function statusText(fetchedAt: string): string {
-  const mins = Math.max(0, Math.round((Date.now() - Date.parse(fetchedAt)) / 60_000));
-  if (mins < 1) return "Updated just now · mock data";
-  if (mins === 1) return "Updated 1 min ago · mock data";
-  return `Updated ${mins} min ago · mock data`;
+export type BoardOptions = {
+  stale?: boolean;
+  statusOverride?: string | null;
+};
+
+function statusText(feed: WaitFeed, opts: BoardOptions): string {
+  if (opts.statusOverride) return opts.statusOverride;
+  const mins = Math.max(0, Math.round((Date.now() - Date.parse(feed.fetchedAt)) / 60_000));
+  const age =
+    mins < 1 ? "Updated just now" : mins === 1 ? "Updated 1 min ago" : `Updated ${mins} min ago`;
+  return opts.stale ? `${age} — may be stale` : age;
 }
 
 /** Render Variant A stadium scoreboard from a WaitFeed joined to the catalog. */
-export function renderBoard(feed: WaitFeed): string {
+export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
   const rows = joinBoardRows(feed.attractions)
     .sort((a, b) => {
       const aw = a.isOpen ? a.waitMinutes : 9999;
@@ -37,7 +43,7 @@ export function renderBoard(feed: WaitFeed): string {
       <header class="top">
         <div>
           <h1>Kennywood Waits</h1>
-          <p class="status" role="status">${escapeHtml(statusText(feed.fetchedAt))}</p>
+          <p class="status" role="status">${escapeHtml(statusText(feed, opts))}</p>
         </div>
         <div class="actions" aria-hidden="true">
           <button type="button" disabled>Wait ↑</button>
