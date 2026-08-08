@@ -1,0 +1,3 @@
+# Same-origin Queue-Times proxy on Cloudflare
+
+Queue-Times’ Real Time JSON for Kennywood (park 312) is reachable from non-browser clients but **not readable from a browser `fetch`** — responses omit `Access-Control-Allow-Origin` ([research](https://github.com/blocher/kennywood/issues/2)). We still want live waits in a static SPA, so v1 uses a **minimal same-origin Cloudflare Pages Function / Worker** that fetches Queue-Times server-side and returns a small normalized DTO to the client. We rejected a cron-only static snapshot (too stale for park day) and absolute “no server hop” (incompatible with CORS). The proxy has no database, auth, or Group storage; ~60s edge cache; Vite mirrors the same path in local dev.
