@@ -23,12 +23,16 @@ body {
 
 button {
   font: inherit;
-  cursor: not-allowed;
+  cursor: pointer;
   border: 1px solid #2c2c2c;
   background: #1a1a1a;
   color: var(--paper);
   border-radius: 6px;
   padding: 0.45rem 0.7rem;
+}
+
+button:disabled {
+  cursor: not-allowed;
   opacity: 0.55;
 }
 
@@ -131,4 +135,11 @@ a {
   font-size: 0.8rem;
   color: var(--fog);
   padding: 1.5rem 1rem 2rem;
+}
+
+.empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--fog);
+  list-style: none;
 }
