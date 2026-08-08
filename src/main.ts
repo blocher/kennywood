@@ -2,10 +2,15 @@ import "./style.css";
 import { renderBoard } from "./board";
 import { defaultChrome, type BoardChrome } from "./chrome";
 import { fetchWaits } from "./fetchWaits";
+import { clearFilters, defaultFilters, type FilterState } from "./filters";
+import { createRider, loadGroup, saveGroup, type Rider } from "./group";
 import { MOCK_FEED } from "./mockFeed";
+import type { RideType } from "./catalog";
 import type { WaitFeed } from "./types";
 
 const POLL_MS = 60_000;
+const CHROME_KEY = "kennywood-waits:chrome";
+const FILTERS_KEY = "kennywood-waits:filters";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("#app missing");
@@ -13,14 +18,76 @@ if (!app) throw new Error("#app missing");
 let lastGood: WaitFeed = MOCK_FEED;
 let stale = false;
 let statusOverride: string | null = "Loading waits…";
-let chrome: BoardChrome = defaultChrome();
+let chromeState: BoardChrome = loadChrome();
+let filters: FilterState = loadFilters();
+let filtersOpen = false;
+let groupOpen = false;
+let riders: Rider[] = loadGroup();
+let selectedRiderIds = new Set<string>();
 
 function paint() {
   app!.innerHTML = renderBoard(lastGood, {
     stale,
     statusOverride,
-    chrome,
+    chrome: chromeState,
+    filters,
+    filtersOpen,
+    groupOpen,
+    riders,
+    selectedRiderIds,
   });
+}
+
+function persistChrome() {
+  localStorage.setItem(CHROME_KEY, JSON.stringify(chromeState));
+}
+
+function persistFilters() {
+  localStorage.setItem(
+    FILTERS_KEY,
+    JSON.stringify({
+      types: [...filters.types],
+      waitMin: filters.waitMin,
+      waitMax: filters.waitMax,
+      heightMin: filters.heightMin,
+      heightMax: filters.heightMax,
+    }),
+  );
+}
+
+function loadChrome(): BoardChrome {
+  try {
+    const raw = localStorage.getItem(CHROME_KEY);
+    if (!raw) return defaultChrome();
+    const p = JSON.parse(raw) as BoardChrome;
+    if (p.sort !== "wait" && p.sort !== "alpha") return defaultChrome();
+    return { sort: p.sort, hideClosed: Boolean(p.hideClosed) };
+  } catch {
+    return defaultChrome();
+  }
+}
+
+function loadFilters(): FilterState {
+  try {
+    const raw = localStorage.getItem(FILTERS_KEY);
+    if (!raw) return defaultFilters();
+    const p = JSON.parse(raw) as {
+      types: RideType[];
+      waitMin: number;
+      waitMax: number;
+      heightMin: number;
+      heightMax: number;
+    };
+    return {
+      types: new Set(p.types),
+      waitMin: p.waitMin,
+      waitMax: p.waitMax,
+      heightMin: p.heightMin,
+      heightMax: p.heightMax,
+    };
+  } catch {
+    return defaultFilters();
+  }
 }
 
 async function refresh() {
@@ -52,12 +119,141 @@ document.addEventListener("click", (e) => {
   const t = (e.target as HTMLElement).closest<HTMLElement>("[data-action]");
   if (!t) return;
   const action = t.dataset.action;
-  if (action === "toggle-sort") {
-    chrome = { ...chrome, sort: chrome.sort === "wait" ? "alpha" : "wait" };
+  switch (action) {
+    case "toggle-sort":
+      chromeState = { ...chromeState, sort: chromeState.sort === "wait" ? "alpha" : "wait" };
+      persistChrome();
+      paint();
+      break;
+    case "toggle-closed":
+      chromeState = { ...chromeState, hideClosed: !chromeState.hideClosed };
+      persistChrome();
+      paint();
+      break;
+    case "open-filters":
+      filtersOpen = true;
+      groupOpen = false;
+      paint();
+      break;
+    case "close-filters":
+      filtersOpen = false;
+      paint();
+      break;
+    case "open-group":
+      groupOpen = true;
+      filtersOpen = false;
+      paint();
+      break;
+    case "close-group":
+      groupOpen = false;
+      paint();
+      break;
+    case "clear-filters":
+      filters = clearFilters();
+      persistFilters();
+      paint();
+      break;
+    case "toggle-type":
+    case "toggle-rider":
+      return;
+    case "delete-rider": {
+      const id = t.dataset.id!;
+      riders = riders.filter((r) => r.id !== id);
+      selectedRiderIds.delete(id);
+      saveGroup(riders);
+      paint();
+      break;
+    }
+    case "edit-rider": {
+      const id = t.dataset.id!;
+      const rider = riders.find((r) => r.id === id);
+      if (!rider) break;
+      const name = prompt("First name", rider.name);
+      if (name == null || !name.trim()) break;
+      const feet = Number(prompt("Feet", String(Math.floor(rider.heightIn / 12))));
+      const inches = Number(prompt("Inches", String(rider.heightIn % 12)));
+      if (!Number.isFinite(feet) || !Number.isFinite(inches)) break;
+      riders = riders.map((r) =>
+        r.id === id ? { ...r, name: name.trim(), heightIn: feet * 12 + inches } : r,
+      );
+      saveGroup(riders);
+      paint();
+      break;
+    }
+  }
+});
+
+document.addEventListener("change", (e) => {
+  const el = e.target as HTMLInputElement;
+  const host = el.closest<HTMLElement>("[data-action]");
+  if (!host) return;
+  const action = host.dataset.action;
+  if (action === "toggle-type") {
+    const type = host.dataset.type as RideType;
+    const types = new Set(filters.types);
+    if (types.has(type)) types.delete(type);
+    else types.add(type);
+    filters = { ...filters, types };
+    persistFilters();
     paint();
   }
-  if (action === "toggle-closed") {
-    chrome = { ...chrome, hideClosed: !chrome.hideClosed };
+  if (action === "toggle-rider") {
+    const id = host.dataset.id!;
+    const next = new Set(selectedRiderIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    selectedRiderIds = next;
+    paint();
+  }
+});
+
+document.addEventListener("input", (e) => {
+  const el = e.target as HTMLInputElement;
+  const host = el.closest<HTMLElement>("[data-action]");
+  if (!host) return;
+  const action = host.dataset.action;
+  const value = Number(el.value);
+  if (action === "wait-min") {
+    filters = { ...filters, waitMin: Math.min(value, filters.waitMax) };
+    persistFilters();
+    paint();
+  }
+  if (action === "wait-max") {
+    filters = { ...filters, waitMax: Math.max(value, filters.waitMin) };
+    persistFilters();
+    paint();
+  }
+  if (action === "height-min") {
+    filters = { ...filters, heightMin: Math.min(value, filters.heightMax) };
+    persistFilters();
+    paint();
+  }
+  if (action === "height-max") {
+    filters = { ...filters, heightMax: Math.max(value, filters.heightMin) };
+    persistFilters();
+    paint();
+  }
+});
+
+document.addEventListener("submit", (e) => {
+  const form = (e.target as HTMLElement).closest<HTMLFormElement>("form[data-action='add-rider']");
+  if (!form) return;
+  e.preventDefault();
+  const fd = new FormData(form);
+  const name = String(fd.get("name") ?? "");
+  const feet = Number(fd.get("feet"));
+  const inches = Number(fd.get("inches"));
+  if (!name.trim() || !Number.isFinite(feet) || !Number.isFinite(inches)) return;
+  riders = [...riders, createRider(name, feet, inches)];
+  saveGroup(riders);
+  paint();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (filtersOpen || groupOpen) {
+    filtersOpen = false;
+    groupOpen = false;
     paint();
   }
 });

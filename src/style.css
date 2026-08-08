@@ -143,3 +143,139 @@ a {
   color: var(--fog);
   list-style: none;
 }
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.55);
+  z-index: 40;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  max-height: min(78vh, 640px);
+  overflow: auto;
+  background: #161616;
+  border-radius: 16px 16px 0 0;
+  border-top: 1px solid #2c2c2c;
+  padding: 0 1rem 1.25rem;
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: #161616;
+  padding: 1rem 0 0.75rem;
+  z-index: 1;
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.sheet fieldset {
+  border: 1px solid #2c2c2c;
+  border-radius: 10px;
+  margin: 0 0 0.85rem;
+  padding: 0.75rem;
+}
+
+.sheet legend {
+  padding: 0 0.35rem;
+  color: var(--fog);
+  font-size: 0.8rem;
+}
+
+.readout {
+  margin: 0.35rem 0 0;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--amber);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid #2c2c2c;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.chip.on {
+  border-color: #c49200;
+  background: rgb(255 193 7 / 0.12);
+}
+
+.btn-block {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.hint {
+  color: var(--fog);
+  font-size: 0.9rem;
+}
+
+.rider {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.4rem;
+  align-items: center;
+  border: 1px solid #2c2c2c;
+  border-radius: 10px;
+  padding: 0.65rem;
+  margin-bottom: 0.5rem;
+}
+
+.rider.on {
+  border-color: #c49200;
+}
+
+.rider label {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.rider-h {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--fog);
+}
+
+.rider-form {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.rider-form label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.rider-form input {
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #2c2c2c;
+  background: #0f0f0f;
+  color: var(--paper);
+}
