@@ -120,11 +120,22 @@ a {
   font-weight: 700;
 }
 
+.chip-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  padding: 0 0 0.5rem;
+}
+
 .type-quick {
   display: flex;
   gap: 0.35rem;
   align-items: stretch;
-  padding: 0 0.75rem 0.55rem;
+  padding: 0 0.75rem;
+}
+
+.land-quick .type-chip {
+  font-size: 0.72rem;
 }
 
 .type-scroll {
@@ -201,11 +212,36 @@ a {
   font-weight: 700;
 }
 
+.height {
+  display: block;
+  margin-top: 0.18rem;
+  color: var(--fog);
+  font-size: 0.82rem;
+}
+
 .meta {
   display: block;
-  margin-top: 0.2rem;
+  margin-top: 0.12rem;
   color: var(--fog);
   font-size: 0.78rem;
+}
+
+.times {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.wait-alt {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: #5a5a5a;
+  letter-spacing: -0.02em;
+  text-align: right;
 }
 
 .wait {
@@ -215,7 +251,7 @@ a {
   line-height: 1;
   color: var(--amber);
   letter-spacing: -0.04em;
-  min-width: 3.2ch;
+  min-width: 2.4ch;
   text-align: right;
 }
 

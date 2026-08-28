@@ -22,14 +22,18 @@ _Avoid_: Guest, member, person (when referring to a Group entry)
 
 **Ride type**:
 A coarse category used to filter Attractions. Locked set from Kennywood first-party labels: roller coaster, thrill ride, family ride, dark ride / walk-on, water ride, kiddie ride. Each Attraction has exactly one.
-_Avoid_: Land, zone, category (unless referring to Queue-Times lands), other non-kid ride
+_Avoid_: Zone, category (unless referring to Ride type), kid ride (say kiddie ride), dark ride / walkthrough (say dark ride / walk-on)
+
+**Land**:
+A named park area an Attraction sits in. Locked set from Kennywood first-party names: Area 412, Kenny Lane, Kennyville, Kennywood Junction, Kiddieland, Lost Kennywood, Main Midway, Steelers Country, The Lagoon. Each Attraction has at most one.
+_Avoid_: Zone, area (when naming the filter), Queue-Times land
 
 **Attraction catalog**:
-The hand-maintained map from Queue-Times ride ids to Ride type, Height filter, and related eligibility facts, curated from Kennywood’s published accessibility materials and other public sources.
+The hand-maintained map from live-source ride ids to Ride type, Land, Height filter, and related eligibility facts, curated from Kennywood’s published accessibility materials and other public sources.
 _Avoid_: Ride database, metadata file (when speaking in domain terms)
 
 **Height filter**:
-The Attraction’s published height rules, reduced for filtering to a rideable envelope (lowest allowed height through any maximum), including companion-supervised bands.
+The Attraction’s published height rules — companion minimum, solo minimum, and maximum — reduced for filtering to a rideable envelope (lowest allowed height through any maximum). V1 treats a missing companion minimum as no floor when a companion is present.
 _Avoid_: Height requirement (when naming the filter UI concept)
 
 **Wait range**:

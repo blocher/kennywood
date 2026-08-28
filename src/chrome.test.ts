@@ -8,6 +8,8 @@ function row(partial: Partial<BoardRow> & Pick<BoardRow, "id" | "name" | "isOpen
     rideType: "thrill ride",
     envelopeMinIn: 48,
     envelopeMaxIn: null,
+    companionMinIn: 48,
+    soloMinIn: 48,
     heightUnknown: false,
     waitUnknown: false,
     ...partial,

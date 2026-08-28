@@ -20,6 +20,14 @@ export function parseWaitSource(raw: string | null | undefined): WaitSource {
   return raw === "queue-times" ? "queue-times" : "themeparks";
 }
 
+export function otherWaitSource(source: WaitSource): WaitSource {
+  return source === "themeparks" ? "queue-times" : "themeparks";
+}
+
+export function waitSourceLabel(source: WaitSource): string {
+  return WAIT_SOURCES.find((s) => s.id === source)?.label ?? source;
+}
+
 const ATTRIBUTION_LINKS: { id: WaitSource; text: string; href: string }[] = [
   { id: "themeparks", text: "ThemeParks.wiki", href: "https://themeparks.wiki/" },
   { id: "queue-times", text: "Queue-Times.com", href: "https://queue-times.com/en-US" },

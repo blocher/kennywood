@@ -1,5 +1,5 @@
 import type { BoardRow } from "./joinBoard";
-import type { RideType } from "./catalog";
+import { ALL_LANDS, type RideLand, type RideType } from "./catalog";
 
 export const ALL_RIDE_TYPES: RideType[] = [
   "roller coaster",
@@ -13,6 +13,7 @@ export const ALL_RIDE_TYPES: RideType[] = [
 
 export type FilterState = {
   types: Set<RideType>;
+  lands: Set<RideLand>;
   waitMin: number;
   waitMax: number;
   heightMin: number;
@@ -22,6 +23,7 @@ export type FilterState = {
 export function defaultFilters(): FilterState {
   return {
     types: new Set(ALL_RIDE_TYPES),
+    lands: new Set(ALL_LANDS),
     waitMin: 0,
     waitMax: 120,
     heightMin: 0,
@@ -45,10 +47,20 @@ export function heightRangeMatches(row: BoardRow, heightMin: number, heightMax: 
   return true;
 }
 
+export function isShowingAllLands(lands: Set<RideLand>): boolean {
+  return ALL_LANDS.every((land) => lands.has(land)) && lands.size >= ALL_LANDS.length;
+}
+
+function landMatches(row: BoardRow, lands: Set<RideLand>): boolean {
+  if (isShowingAllLands(lands)) return true;
+  return row.land != null && lands.has(row.land);
+}
+
 export function applyFilters(rows: BoardRow[], filters: FilterState): BoardRow[] {
   const waitUnrestricted = filters.waitMin <= 0 && filters.waitMax >= 120;
   return rows.filter((row) => {
     if (!filters.types.has(row.rideType)) return false;
+    if (!landMatches(row, filters.lands)) return false;
     if (row.waitUnknown) {
       // No live Wait — only keep when the Wait range filter is at defaults.
       if (!waitUnrestricted) return false;

@@ -1,16 +1,23 @@
 import type { WaitFeed } from "./types";
 import { waitLabel } from "./waitLabel";
-import { joinBoardRows, rowMeta } from "./joinBoard";
+import { attachAltWaits, joinBoardRows, rowHeight, rowMeta } from "./joinBoard";
 import { applyChrome, type BoardChrome } from "./chrome";
 import { applyFilters, type FilterState } from "./filters";
 import { formatHeight } from "./heightFormat";
 import type { Rider } from "./group";
-import { renderTypeFilterChips, renderTypeQuick } from "./typeQuick";
+import {
+  renderLandFilterChips,
+  renderLandQuick,
+  renderTypeFilterChips,
+  renderTypeQuick,
+} from "./typeQuick";
 import {
   WAIT_SOURCES,
   renderAttribution,
   type WaitSource,
   DEFAULT_WAIT_SOURCE,
+  otherWaitSource,
+  waitSourceLabel,
 } from "./sources";
 
 export type BoardOptions = {
@@ -23,6 +30,7 @@ export type BoardOptions = {
   riders?: Rider[];
   selectedRiderIds?: Set<string>;
   source?: WaitSource;
+  altFeed?: WaitFeed | null;
 };
 
 function statusText(feed: WaitFeed, opts: BoardOptions): string {
@@ -118,6 +126,10 @@ function filtersSheet(filters: FilterState, source: WaitSource): string {
           <legend>Ride type</legend>
           ${renderTypeFilterChips(filters)}
         </fieldset>
+        <fieldset>
+          <legend>Land</legend>
+          ${renderLandFilterChips(filters)}
+        </fieldset>
         <button type="button" class="btn-block" data-action="clear-filters">Clear filters</button>
       </div>
     </div>`;
@@ -183,6 +195,9 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
   const source = opts.source ?? feed.source ?? DEFAULT_WAIT_SOURCE;
 
   let joined = joinBoardRows(feed.attractions, source);
+  if (opts.altFeed) {
+    joined = attachAltWaits(joined, opts.altFeed.attractions, otherWaitSource(source));
+  }
   if (filters) joined = applyFilters(joined, filters);
   // Eligibility: all selected riders must fit
   if (selected.size > 0) {
@@ -193,17 +208,28 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
       return chosen.every((r) => r.heightIn >= row.envelopeMinIn! && r.heightIn <= envMax);
     });
   }
+  const altSourceLabel = waitSourceLabel(otherWaitSource(source));
   const rows = applyChrome(joined, chrome).map((a) => {
     const label = waitLabel(a);
+    const altLabel = a.altWait ? waitLabel(a.altWait) : null;
     const closed = !a.isOpen && !a.waitUnknown ? " closed" : "";
     const nowait = a.waitUnknown ? " nowait" : "";
+    const aria =
+      altLabel != null
+        ? `Wait ${label}, ${altSourceLabel} ${altLabel}`
+        : `Wait ${label}`;
+    const altHtml =
+      altLabel != null
+        ? `<span class="wait-alt" aria-hidden="true">${escapeHtml(altLabel)}</span>`
+        : "";
     return `
         <li class="row${closed}${nowait}">
           <div class="main">
             <span class="name">${escapeHtml(a.name)}</span>
+            <span class="height">${escapeHtml(rowHeight(a))}</span>
             <span class="meta">${escapeHtml(rowMeta(a))}</span>
           </div>
-          <span class="wait" aria-label="Wait ${label}">${label}</span>
+          <span class="times" aria-label="${escapeHtml(aria)}">${altHtml}<span class="wait">${escapeHtml(label)}</span></span>
         </li>`;
   });
 
@@ -212,7 +238,9 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
       ? `<li class="empty">No Attractions match <button type="button" data-action="clear-filters">Clear filters</button></li>`
       : rows.join("");
 
-  const typeQuick = filters ? renderTypeQuick(filters) : "";
+  const typeQuick = filters
+    ? `<div class="chip-rows">${renderTypeQuick(filters)}${renderLandQuick(filters)}</div>`
+    : "";
 
   return `
     <div class="board">

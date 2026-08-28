@@ -5,12 +5,14 @@ import { fetchWaits } from "./fetchWaits";
 import { clearFilters, defaultFilters, type FilterState } from "./filters";
 import { createRider, loadGroup, saveGroup, type Rider } from "./group";
 import { MOCK_FEED } from "./mockFeed";
-import type { RideType } from "./catalog";
+import { debugFeeds, isDebugMode } from "./debugFeed";
+import { ALL_LANDS, type RideLand, type RideType } from "./catalog";
 import type { WaitFeed } from "./types";
-import { typesAfterTypeTap } from "./typeQuick";
+import { landsAfterLandTap, typesAfterTypeTap } from "./typeQuick";
 import { formatHeight } from "./heightFormat";
 import {
   DEFAULT_WAIT_SOURCE,
+  otherWaitSource,
   parseWaitSource,
   type WaitSource,
 } from "./sources";
@@ -23,9 +25,13 @@ const SOURCE_KEY = "kennywood-waits:source";
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("#app missing");
 
-let lastGood: WaitFeed = { ...MOCK_FEED, source: DEFAULT_WAIT_SOURCE };
+const debug = isDebugMode(window.location.search);
+const initialFeeds: Partial<Record<WaitSource, WaitFeed>> = debug
+  ? debugFeeds()
+  : { [DEFAULT_WAIT_SOURCE]: { ...MOCK_FEED, source: DEFAULT_WAIT_SOURCE } };
+let feeds = initialFeeds;
 let stale = false;
-let statusOverride: string | null = "Loading waits…";
+let statusOverride: string | null = debug ? "Debug sample waits" : "Loading waits…";
 let chromeState: BoardChrome = loadChrome();
 let filters: FilterState = loadFilters();
 let waitSource: WaitSource = loadSource();
@@ -34,8 +40,18 @@ let groupOpen = false;
 let riders: Rider[] = loadGroup();
 let selectedRiderIds = new Set<string>();
 
+function currentFeed(): WaitFeed {
+  return (
+    feeds[waitSource] ?? { ...MOCK_FEED, source: waitSource }
+  );
+}
+
+function currentAlt(): WaitFeed | null {
+  return feeds[otherWaitSource(waitSource)] ?? null;
+}
+
 function paint() {
-  app!.innerHTML = renderBoard(lastGood, {
+  app!.innerHTML = renderBoard(currentFeed(), {
     stale,
     statusOverride,
     chrome: chromeState,
@@ -45,13 +61,14 @@ function paint() {
     riders,
     selectedRiderIds,
     source: waitSource,
+    altFeed: currentAlt(),
   });
 }
 
 /** Refresh the attraction list without remounting an open sheet (keeps sliders alive). */
 function paintList() {
   const next = document.createElement("div");
-  next.innerHTML = renderBoard(lastGood, {
+  next.innerHTML = renderBoard(currentFeed(), {
     stale,
     statusOverride,
     chrome: chromeState,
@@ -61,6 +78,7 @@ function paintList() {
     riders,
     selectedRiderIds,
     source: waitSource,
+    altFeed: currentAlt(),
   });
   const newList = next.querySelector(".list");
   const curList = app!.querySelector(".list");
@@ -76,6 +94,7 @@ function persistFilters() {
     FILTERS_KEY,
     JSON.stringify({
       types: [...filters.types],
+      lands: [...filters.lands],
       waitMin: filters.waitMin,
       waitMax: filters.waitMax,
       heightMin: filters.heightMin,
@@ -106,13 +125,18 @@ function loadFilters(): FilterState {
     if (!raw) return defaultFilters();
     const p = JSON.parse(raw) as {
       types: RideType[];
+      lands?: string[];
       waitMin: number;
       waitMax: number;
       heightMin: number;
       heightMax: number;
     };
+    const lands = (p.lands ?? []).filter((l): l is RideLand =>
+      (ALL_LANDS as readonly string[]).includes(l),
+    );
     return {
       types: new Set(p.types),
+      lands: new Set(lands.length ? lands : ALL_LANDS),
       waitMin: p.waitMin,
       waitMax: p.waitMax,
       heightMin: p.heightMin,
@@ -133,14 +157,25 @@ function loadSource(): WaitSource {
 
 async function refresh() {
   if (document.visibilityState !== "visible") return;
-  const result = await fetchWaits(waitSource);
-  if (result.ok) {
-    lastGood = result.feed;
+  if (debug) {
+    feeds = debugFeeds();
+    stale = false;
+    statusOverride = "Debug sample waits";
+    paint();
+    return;
+  }
+  const altSource = otherWaitSource(waitSource);
+  const [primary, alt] = await Promise.all([fetchWaits(waitSource), fetchWaits(altSource)]);
+  if (primary.ok) {
+    feeds = { ...feeds, [waitSource]: primary.feed };
     stale = false;
     statusOverride = null;
   } else {
     stale = true;
-    statusOverride = `Showing last-good data — ${result.message || "fetch failed"}`;
+    statusOverride = `Showing last-good data — ${primary.message || "fetch failed"}`;
+  }
+  if (alt.ok) {
+    feeds = { ...feeds, [altSource]: alt.feed };
   }
   paint();
 }
@@ -201,6 +236,18 @@ document.addEventListener("click", (e) => {
     case "quick-toggle": {
       const type = t.dataset.type as RideType;
       filters = { ...filters, types: typesAfterTypeTap(filters.types, type) };
+      persistFilters();
+      paint();
+      break;
+    }
+    case "quick-land-all":
+      filters = { ...filters, lands: new Set(ALL_LANDS) };
+      persistFilters();
+      paint();
+      break;
+    case "quick-land": {
+      const land = t.dataset.land as RideLand;
+      filters = { ...filters, lands: landsAfterLandTap(filters.lands, land) };
       persistFilters();
       paint();
       break;

@@ -1,5 +1,5 @@
-import type { RideType } from "./catalog";
-import { ALL_RIDE_TYPES, type FilterState } from "./filters";
+import { ALL_LANDS, type RideLand, type RideType } from "./catalog";
+import { ALL_RIDE_TYPES, isShowingAllLands, type FilterState } from "./filters";
 
 const TYPE_ICONS: Partial<Record<RideType, string>> = {
   "roller coaster": `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 17h2l1-3 2 5 2-8 2 6 2-4 1 4h2l-2-7-2 4-2-6-2 8-2-5-1 3H3v3zm0 2h18v2H3v-2z"/></svg>`,
@@ -69,4 +69,63 @@ export function renderTypeFilterChips(filters: FilterState): string {
 export function typesAfterTypeTap(current: Set<RideType>, type: RideType): Set<RideType> {
   const alreadySolo = current.size === 1 && current.has(type);
   return alreadySolo ? new Set(ALL_RIDE_TYPES) : new Set([type]);
+}
+
+export const QUICK_LANDS: { land: RideLand; short: string }[] = [
+  { land: "Kennywood Junction", short: "Junction" },
+  { land: "Kenny Lane", short: "Kenny Ln" },
+  { land: "Lost Kennywood", short: "Lost KW" },
+  { land: "Kiddieland", short: "Kiddieland" },
+  { land: "The Lagoon", short: "Lagoon" },
+  { land: "Main Midway", short: "Midway" },
+  { land: "Kennyville", short: "Kennyville" },
+  { land: "Area 412", short: "412" },
+  { land: "Steelers Country", short: "Steelers" },
+];
+
+function activeSoloLand(lands: Set<RideLand>): RideLand | null {
+  if (lands.size !== 1) return null;
+  const only = [...lands][0]!;
+  return QUICK_LANDS.some((l) => l.land === only) ? only : null;
+}
+
+function landChipButtons(filters: FilterState, opts: { wrapScroll: boolean }): string {
+  const solo = activeSoloLand(filters.lands);
+  const allOn = !solo && isShowingAllLands(filters.lands);
+  const chips = QUICK_LANDS.map(({ land, short }) => {
+    const on = solo === land;
+    return `<button type="button" class="type-chip land-chip ${on ? "on" : ""}" data-action="quick-land" data-land="${land}" aria-pressed="${on}" aria-label="${land}">
+      <span class="type-lbl">${short}</span>
+    </button>`;
+  }).join("");
+
+  const allBtn = `<button type="button" class="type-chip type-all ${allOn ? "on" : ""}" data-action="quick-land-all" aria-pressed="${allOn}">All</button>`;
+  if (opts.wrapScroll) {
+    return `${allBtn}<div class="type-scroll">${chips}</div>`;
+  }
+  return `${allBtn}${chips}`;
+}
+
+/** Always-visible Land chips: All + short labels; exclusive single-select. */
+export function renderLandQuick(filters: FilterState): string {
+  return `<nav class="type-quick land-quick" aria-label="Land">
+    ${landChipButtons(filters, { wrapScroll: true })}
+  </nav>`;
+}
+
+/** Same Land chips for the Filters sheet. */
+export function renderLandFilterChips(filters: FilterState): string {
+  return `<div class="type-chips" role="group" aria-label="Land">
+    ${landChipButtons(filters, { wrapScroll: false })}
+  </div>`;
+}
+
+/**
+ * Exclusive Land chip tap:
+ * - Tap a Land → select only that Land
+ * - Tap the active Land again → back to All
+ */
+export function landsAfterLandTap(current: Set<RideLand>, land: RideLand): Set<RideLand> {
+  const alreadySolo = current.size === 1 && current.has(land);
+  return alreadySolo ? new Set(ALL_LANDS) : new Set([land]);
 }
