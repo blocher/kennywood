@@ -1,7 +1,7 @@
 import type { WaitFeed } from "./types";
 import { waitLabel } from "./waitLabel";
 import { attachAltWaits, joinBoardRows, rowHeight, rowMeta } from "./joinBoard";
-import { applyChrome, type BoardChrome } from "./chrome";
+import { applyChrome, defaultChrome, type BoardChrome } from "./chrome";
 import { applyFilters, type FilterState } from "./filters";
 import { formatHeight } from "./heightFormat";
 import type { Rider } from "./group";
@@ -12,12 +12,9 @@ import {
   renderTypeQuick,
 } from "./typeQuick";
 import {
-  WAIT_SOURCES,
-  renderAttribution,
-  type WaitSource,
-  DEFAULT_WAIT_SOURCE,
-  otherWaitSource,
-  waitSourceLabel,
+  OFFICIAL_APP_WAIT_SOURCE,
+  POSTED_WAIT_SOURCE,
+  renderDataSources,
 } from "./sources";
 
 export type BoardOptions = {
@@ -29,8 +26,7 @@ export type BoardOptions = {
   groupOpen?: boolean;
   riders?: Rider[];
   selectedRiderIds?: Set<string>;
-  source?: WaitSource;
-  altFeed?: WaitFeed | null;
+  appFeed?: WaitFeed | null;
 };
 
 function statusText(feed: WaitFeed, opts: BoardOptions): string {
@@ -76,20 +72,7 @@ function dualRange(opts: {
     </fieldset>`;
 }
 
-function filtersSheet(filters: FilterState, source: WaitSource): string {
-  const sourceOptions = WAIT_SOURCES.map(
-    (s) => `
-      <label class="source-option ${source === s.id ? "on" : ""}">
-        <input type="radio" name="wait-source" data-action="set-source" value="${s.id}" ${
-          source === s.id ? "checked" : ""
-        } />
-        <span class="source-copy">
-          <span class="source-label">${escapeHtml(s.label)}</span>
-          <span class="source-hint">${escapeHtml(s.hint)}</span>
-        </span>
-      </label>`,
-  ).join("");
-
+function filtersSheet(filters: FilterState): string {
   return `
     <div class="sheet-backdrop" data-action="close-filters"></div>
     <div class="sheet" role="dialog" aria-label="Filters">
@@ -98,10 +81,6 @@ function filtersSheet(filters: FilterState, source: WaitSource): string {
         <button type="button" data-action="close-filters">Close</button>
       </header>
       <div class="sheet-body">
-        <fieldset>
-          <legend>Data source</legend>
-          <div class="source-list" role="radiogroup" aria-label="Wait data source">${sourceOptions}</div>
-        </fieldset>
         ${dualRange({
           legend: "Wait (min)",
           min: 0,
@@ -133,6 +112,14 @@ function filtersSheet(filters: FilterState, source: WaitSource): string {
         <button type="button" class="btn-block" data-action="clear-filters">Clear filters</button>
       </div>
     </div>`;
+}
+
+function spokenWait(label: string): string {
+  return /^\d+$/.test(label) ? `${label} minutes` : label;
+}
+
+function waitValueClass(label: string): string {
+  return /^\d+$/.test(label) ? "" : " is-word";
 }
 
 function addRiderForm(): string {
@@ -188,15 +175,13 @@ function groupSheet(riders: Rider[], selected: Set<string>): string {
 
 /** Render Variant A stadium scoreboard from a WaitFeed joined to the catalog. */
 export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
-  const chrome = opts.chrome ?? { sort: "wait" as const, hideClosed: false };
+  const chrome = opts.chrome ?? defaultChrome();
   const filters = opts.filters;
   const selected = opts.selectedRiderIds ?? new Set<string>();
   const riders = opts.riders ?? [];
-  const source = opts.source ?? feed.source ?? DEFAULT_WAIT_SOURCE;
-
-  let joined = joinBoardRows(feed.attractions, source);
-  if (opts.altFeed) {
-    joined = attachAltWaits(joined, opts.altFeed.attractions, otherWaitSource(source));
+  let joined = joinBoardRows(feed.attractions, POSTED_WAIT_SOURCE);
+  if (opts.appFeed) {
+    joined = attachAltWaits(joined, opts.appFeed.attractions, OFFICIAL_APP_WAIT_SOURCE);
   }
   if (filters) joined = applyFilters(joined, filters);
   // Eligibility: all selected riders must fit
@@ -208,20 +193,12 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
       return chosen.every((r) => r.heightIn >= row.envelopeMinIn! && r.heightIn <= envMax);
     });
   }
-  const altSourceLabel = waitSourceLabel(otherWaitSource(source));
   const rows = applyChrome(joined, chrome).map((a) => {
-    const label = waitLabel(a);
-    const altLabel = a.altWait ? waitLabel(a.altWait) : null;
+    const postedLabel = waitLabel(a);
+    const appLabel = a.altWait ? waitLabel(a.altWait) : "—";
     const closed = !a.isOpen && !a.waitUnknown ? " closed" : "";
     const nowait = a.waitUnknown ? " nowait" : "";
-    const aria =
-      altLabel != null
-        ? `Wait ${label}, ${altSourceLabel} ${altLabel}`
-        : `Wait ${label}`;
-    const altHtml =
-      altLabel != null
-        ? `<span class="wait-alt" aria-hidden="true">${escapeHtml(altLabel)}</span>`
-        : "";
+    const aria = `Posted in Park ${spokenWait(postedLabel)}; Listed in App ${spokenWait(appLabel)}`;
     return `
         <li class="row${closed}${nowait}">
           <div class="main">
@@ -229,7 +206,16 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
             <span class="height">${escapeHtml(rowHeight(a))}</span>
             <span class="meta">${escapeHtml(rowMeta(a))}</span>
           </div>
-          <span class="times" aria-label="${escapeHtml(aria)}">${altHtml}<span class="wait">${escapeHtml(label)}</span></span>
+          <span class="times" aria-label="${escapeHtml(aria)}">
+            <span class="wait-source posted" aria-hidden="true">
+              <span class="wait-value${waitValueClass(postedLabel)}">${escapeHtml(postedLabel)}</span>
+              <span class="wait-source-label">Posted in Park</span>
+            </span>
+            <span class="wait-source official-app" aria-hidden="true">
+              <span class="wait-value${waitValueClass(appLabel)}">${escapeHtml(appLabel)}</span>
+              <span class="wait-source-label">Listed in App</span>
+            </span>
+          </span>
         </li>`;
   });
 
@@ -251,14 +237,21 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
             <p class="status" role="status">${escapeHtml(statusText(feed, opts))}</p>
           </div>
           <div class="actions">
-            <div class="sort-toggle" role="group" aria-label="Sort by">
+            <div class="sort-toggle" role="group" aria-label="Sort waits by">
               <button
                 type="button"
                 data-action="set-sort"
-                data-sort="wait"
-                class="${chrome.sort === "wait" ? "on" : ""}"
-                aria-pressed="${chrome.sort === "wait" ? "true" : "false"}"
-              >Wait ↑</button>
+                data-sort="park"
+                class="${chrome.sort === "park" ? "on" : ""}"
+                aria-pressed="${chrome.sort === "park" ? "true" : "false"}"
+              >Park ↑</button>
+              <button
+                type="button"
+                data-action="set-sort"
+                data-sort="app"
+                class="${chrome.sort === "app" ? "on" : ""}"
+                aria-pressed="${chrome.sort === "app" ? "true" : "false"}"
+              >App ↑</button>
               <button
                 type="button"
                 data-action="set-sort"
@@ -274,8 +267,8 @@ export function renderBoard(feed: WaitFeed, opts: BoardOptions = {}): string {
         ${typeQuick}
       </header>
       <ul class="list">${empty}</ul>
-      ${renderAttribution(source)}
-      ${opts.filtersOpen && filters ? filtersSheet(filters, source) : ""}
+      ${renderDataSources()}
+      ${opts.filtersOpen && filters ? filtersSheet(filters) : ""}
       ${opts.groupOpen ? groupSheet(riders, selected) : ""}
     </div>`;
 }

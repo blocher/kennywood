@@ -71,6 +71,33 @@ describe("joinBoardRows", () => {
     expect(rowMeta(cosmic!)).toBe("Thrill Ride · Area 412 · no wait data");
   });
 
+  it("drops a Queue-Times name duplicate that is not the catalog ride id", () => {
+    const lowercaseBolt: WaitAttraction = {
+      id: "17567",
+      name: "thunderbolt",
+      isOpen: false,
+      waitMinutes: 0,
+      lastUpdated: "2026-08-30T19:08:53.000Z",
+    };
+    const thunderbolt: WaitAttraction = {
+      id: "11028",
+      name: "Thunderbolt",
+      isOpen: true,
+      waitMinutes: 45,
+      lastUpdated: "2026-08-30T19:30:36.000Z",
+    };
+    const rows = joinBoardRows([lowercaseBolt, thunderbolt], "queue-times");
+    const bolts = rows.filter((r) => /thunderbolt/i.test(r.name));
+    expect(bolts).toHaveLength(1);
+    expect(bolts[0]).toMatchObject({
+      id: "11028",
+      name: "Thunderbolt",
+      isOpen: true,
+      waitMinutes: 45,
+      catalogId: 11028,
+    });
+  });
+
   it("joins ThemeParks.wiki UUIDs without appending catalog-only rows", () => {
     const rows = joinBoardRows([cosmicTpw], "themeparks");
     expect(rows).toHaveLength(1);

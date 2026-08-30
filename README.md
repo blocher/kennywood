@@ -1,6 +1,6 @@
 # Kennywood Waits
 
-Phone-first live Wait times for Kennywood (ThemeParks.wiki by default; Queue-Times optional).
+Phone-first live Wait times for Kennywood, comparing the value observed on in-park signs with the value listed in Kennywood's official app.
 
 ## Develop
 
@@ -10,7 +10,7 @@ npm test
 npm run dev
 ```
 
-`npm run dev` serves the SPA and same-origin **`GET /api/waits?source=themeparks|queue-times`** (mirrors `functions/api/waits.ts`). The client polls about every **5 minutes** (ThemeParks.wiki’s documented live-data cadence).
+`npm run dev` serves the SPA and same-origin **`GET /api/waits?source=themeparks|queue-times`** (mirrors `functions/api/waits.ts`). The client loads both sources and polls about every **5 minutes** (ThemeParks.wiki’s documented live-data cadence).
 
 ### ThemeParks.wiki API key
 

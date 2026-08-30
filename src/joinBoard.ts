@@ -1,5 +1,6 @@
 import {
   catalogWithoutQueueTimes,
+  lookupCatalog,
   lookupCatalogByName,
   lookupCatalogByQueueTimesId,
   lookupCatalogByThemeParksId,
@@ -29,7 +30,7 @@ export type BoardRow = WaitAttraction & {
   /** True when no standby Wait is available for this Attraction. */
   waitUnknown: boolean;
   catalogId?: number;
-  /** Wait from the inactive source, when that feed has a matching Attraction. */
+  /** Wait from the paired source, when that feed has a matching Attraction. */
   altWait?: AltWait;
 };
 
@@ -68,23 +69,25 @@ export function joinBoardRows(
   attractions: WaitAttraction[],
   source: WaitSource = "queue-times",
 ): BoardRow[] {
-  const fromFeed = attractions.map((a) => {
-    const cat = resolveCatalog(a, source);
-    const waitUnknown = Boolean(a.waitUnknown);
-    if (!cat) {
-      return {
-        ...a,
-        rideType: "unknown" as const,
-        envelopeMinIn: null,
-        envelopeMaxIn: null,
-        companionMinIn: null,
-        soloMinIn: null,
-        heightUnknown: true,
-        waitUnknown,
-      };
-    }
-    return fromCatalog(a, cat, waitUnknown);
-  });
+  const fromFeed = dedupeCatalogRows(
+    attractions.map((a) => {
+      const cat = resolveCatalog(a, source);
+      const waitUnknown = Boolean(a.waitUnknown);
+      if (!cat) {
+        return {
+          ...a,
+          rideType: "unknown" as const,
+          envelopeMinIn: null,
+          envelopeMaxIn: null,
+          companionMinIn: null,
+          soloMinIn: null,
+          heightUnknown: true,
+          waitUnknown,
+        };
+      }
+      return fromCatalog(a, cat, waitUnknown);
+    }),
+  );
 
   // Queue-Times omits many park Attractions — append catalog-only rows with no wait data.
   if (source !== "queue-times") return fromFeed;
@@ -115,7 +118,37 @@ export function joinBoardRows(
   return [...fromFeed, ...extras];
 }
 
-/** Attach the inactive source's Wait onto rows that share a catalog Attraction. */
+function isOfficialSourceId(row: BoardRow): boolean {
+  if (row.catalogId == null) return false;
+  const cat = lookupCatalog(row.catalogId);
+  if (!cat) return false;
+  if (cat.queueTimesId != null && row.id === String(cat.queueTimesId)) return true;
+  return Boolean(cat.themeParksId && row.id === cat.themeParksId);
+}
+
+/** Queue-Times sometimes lists a second ride id under the same Attraction name. */
+function dedupeCatalogRows(rows: BoardRow[]): BoardRow[] {
+  const indexByCatalogId = new Map<number, number>();
+  const out: BoardRow[] = [];
+  for (const row of rows) {
+    if (row.catalogId == null) {
+      out.push(row);
+      continue;
+    }
+    const existing = indexByCatalogId.get(row.catalogId);
+    if (existing == null) {
+      indexByCatalogId.set(row.catalogId, out.length);
+      out.push(row);
+      continue;
+    }
+    if (!isOfficialSourceId(out[existing]) && isOfficialSourceId(row)) {
+      out[existing] = row;
+    }
+  }
+  return out;
+}
+
+/** Attach the paired source's Wait onto rows that share a catalog Attraction. */
 export function attachAltWaits(
   rows: BoardRow[],
   altAttractions: WaitAttraction[],

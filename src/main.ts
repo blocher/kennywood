@@ -4,23 +4,20 @@ import { defaultChrome, type BoardChrome } from "./chrome";
 import { fetchWaits } from "./fetchWaits";
 import { clearFilters, defaultFilters, type FilterState } from "./filters";
 import { createRider, loadGroup, saveGroup, type Rider } from "./group";
-import { MOCK_FEED } from "./mockFeed";
 import { debugFeeds, isDebugMode } from "./debugFeed";
 import { ALL_LANDS, type RideLand, type RideType } from "./catalog";
 import type { WaitFeed } from "./types";
 import { landsAfterLandTap, typesAfterTypeTap } from "./typeQuick";
 import { formatHeight } from "./heightFormat";
 import {
-  DEFAULT_WAIT_SOURCE,
-  otherWaitSource,
-  parseWaitSource,
+  OFFICIAL_APP_WAIT_SOURCE,
+  POSTED_WAIT_SOURCE,
   type WaitSource,
 } from "./sources";
 
 const POLL_MS = 5 * 60_000;
 const CHROME_KEY = "kennywood-waits:chrome";
 const FILTERS_KEY = "kennywood-waits:filters";
-const SOURCE_KEY = "kennywood-waits:source";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("#app missing");
@@ -28,30 +25,33 @@ if (!app) throw new Error("#app missing");
 const debug = isDebugMode(window.location.search);
 const initialFeeds: Partial<Record<WaitSource, WaitFeed>> = debug
   ? debugFeeds()
-  : { [DEFAULT_WAIT_SOURCE]: { ...MOCK_FEED, source: DEFAULT_WAIT_SOURCE } };
+  : {};
 let feeds = initialFeeds;
 let stale = false;
 let statusOverride: string | null = debug ? "Debug sample waits" : "Loading waits…";
 let chromeState: BoardChrome = loadChrome();
 let filters: FilterState = loadFilters();
-let waitSource: WaitSource = loadSource();
 let filtersOpen = false;
 let groupOpen = false;
 let riders: Rider[] = loadGroup();
 let selectedRiderIds = new Set<string>();
 
-function currentFeed(): WaitFeed {
+function currentPostedFeed(): WaitFeed {
   return (
-    feeds[waitSource] ?? { ...MOCK_FEED, source: waitSource }
+    feeds[POSTED_WAIT_SOURCE] ?? {
+      fetchedAt: new Date().toISOString(),
+      source: POSTED_WAIT_SOURCE,
+      attractions: [],
+    }
   );
 }
 
-function currentAlt(): WaitFeed | null {
-  return feeds[otherWaitSource(waitSource)] ?? null;
+function currentAppFeed(): WaitFeed | null {
+  return feeds[OFFICIAL_APP_WAIT_SOURCE] ?? null;
 }
 
 function paint() {
-  app!.innerHTML = renderBoard(currentFeed(), {
+  app!.innerHTML = renderBoard(currentPostedFeed(), {
     stale,
     statusOverride,
     chrome: chromeState,
@@ -60,15 +60,14 @@ function paint() {
     groupOpen,
     riders,
     selectedRiderIds,
-    source: waitSource,
-    altFeed: currentAlt(),
+    appFeed: currentAppFeed(),
   });
 }
 
 /** Refresh the attraction list without remounting an open sheet (keeps sliders alive). */
 function paintList() {
   const next = document.createElement("div");
-  next.innerHTML = renderBoard(currentFeed(), {
+  next.innerHTML = renderBoard(currentPostedFeed(), {
     stale,
     statusOverride,
     chrome: chromeState,
@@ -77,8 +76,7 @@ function paintList() {
     groupOpen,
     riders,
     selectedRiderIds,
-    source: waitSource,
-    altFeed: currentAlt(),
+    appFeed: currentAppFeed(),
   });
   const newList = next.querySelector(".list");
   const curList = app!.querySelector(".list");
@@ -103,17 +101,14 @@ function persistFilters() {
   );
 }
 
-function persistSource() {
-  localStorage.setItem(SOURCE_KEY, waitSource);
-}
-
 function loadChrome(): BoardChrome {
   try {
     const raw = localStorage.getItem(CHROME_KEY);
     if (!raw) return defaultChrome();
-    const p = JSON.parse(raw) as BoardChrome;
-    if (p.sort !== "wait" && p.sort !== "alpha") return defaultChrome();
-    return { sort: p.sort, hideClosed: Boolean(p.hideClosed) };
+    const p = JSON.parse(raw) as { sort?: string; hideClosed?: boolean };
+    const legacySort = p.sort;
+    const sort = legacySort === "alpha" || legacySort === "app" ? legacySort : "park";
+    return { sort, hideClosed: Boolean(p.hideClosed) };
   } catch {
     return defaultChrome();
   }
@@ -147,14 +142,6 @@ function loadFilters(): FilterState {
   }
 }
 
-function loadSource(): WaitSource {
-  try {
-    return parseWaitSource(localStorage.getItem(SOURCE_KEY));
-  } catch {
-    return DEFAULT_WAIT_SOURCE;
-  }
-}
-
 async function refresh() {
   if (document.visibilityState !== "visible") return;
   if (debug) {
@@ -164,19 +151,19 @@ async function refresh() {
     paint();
     return;
   }
-  const altSource = otherWaitSource(waitSource);
-  const [primary, alt] = await Promise.all([fetchWaits(waitSource), fetchWaits(altSource)]);
-  if (primary.ok) {
-    feeds = { ...feeds, [waitSource]: primary.feed };
-    stale = false;
-    statusOverride = null;
-  } else {
-    stale = true;
-    statusOverride = `Showing last-good data — ${primary.message || "fetch failed"}`;
-  }
-  if (alt.ok) {
-    feeds = { ...feeds, [altSource]: alt.feed };
-  }
+  const [posted, appFeed] = await Promise.all([
+    fetchWaits(POSTED_WAIT_SOURCE),
+    fetchWaits(OFFICIAL_APP_WAIT_SOURCE),
+  ]);
+  const failures: string[] = [];
+  if (posted.ok) feeds = { ...feeds, [POSTED_WAIT_SOURCE]: posted.feed };
+  else failures.push("posted-in-park data");
+  if (appFeed.ok) feeds = { ...feeds, [OFFICIAL_APP_WAIT_SOURCE]: appFeed.feed };
+  else failures.push("official-app data");
+  stale = failures.length > 0;
+  statusOverride = failures.length
+    ? `Some data unavailable — ${failures.join(" and ")}`
+    : null;
   paint();
 }
 
@@ -197,7 +184,8 @@ document.addEventListener("click", (e) => {
   const action = t.dataset.action;
   switch (action) {
     case "set-sort": {
-      const next = t.dataset.sort === "alpha" ? "alpha" : "wait";
+      const raw = t.dataset.sort;
+      const next: BoardChrome["sort"] = raw === "alpha" || raw === "app" ? raw : "park";
       if (next !== chromeState.sort) {
         chromeState = { ...chromeState, sort: next };
         persistChrome();
@@ -293,16 +281,6 @@ document.addEventListener("change", (e) => {
     else next.add(id);
     selectedRiderIds = next;
     paint();
-  }
-  if (action === "set-source") {
-    const next = parseWaitSource(el.value);
-    if (next === waitSource) return;
-    waitSource = next;
-    persistSource();
-    statusOverride = "Loading waits…";
-    stale = false;
-    paint();
-    void refresh();
   }
 });
 
